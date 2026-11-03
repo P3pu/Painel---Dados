@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rumo da Equipe de Dados</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: faixa de comando no topo; resumo antes do detalhe; cada objetivo é um trilho com a marca de onde estava antes. */
+:root {
+  --bg:#EEF1F6; --surface:#FFFFFF; --ink:#162033; --ink2:#47536A; --ink3:#5B677E; --line:#D5DBE6;
+  --accent:#2743C2; --accent-soft:#E3E8FB; --on-accent:#FFFFFF; --s1:#2743C2; --s2:#C4802A; --track:#E2E7EF;
+  --crit:#AE231B; --crit-soft:#FBE9E7; --warn:#7F5200; --warn-soft:#FBF0D9; --good:#0B6B4A; --good-soft:#DFF3EA;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --s1:#7088F0; --bg:#0F141D; --surface:#18202C; --ink:#E8ECF4; --ink2:#B2BBCB; --ink3:#98A3B6; --line:#2C3646;
+  --accent:#8CA2FF; --accent-soft:#232D52; --on-accent:#0F141D; --s2:#B57826; --track:#262F3E;
+  --crit:#FF9C93; --crit-soft:#3B1D1B; --warn:#E8BC63; --warn-soft:#33280F; --good:#6AD3A8; --good-soft:#12322A;
+  color-scheme:dark } }
+:root[data-theme="dark"] {
+  --s1:#7088F0; --bg:#0F141D; --surface:#18202C; --ink:#E8ECF4; --ink2:#B2BBCB; --ink3:#98A3B6; --line:#2C3646;
+  --accent:#8CA2FF; --accent-soft:#232D52; --on-accent:#0F141D; --s2:#B57826; --track:#262F3E;
+  --crit:#FF9C93; --crit-soft:#3B1D1B; --warn:#E8BC63; --warn-soft:#33280F; --good:#6AD3A8; --good-soft:#12322A;
+  color-scheme:dark }
+* { box-sizing:border-box }
+[hidden] { display:none !important }
+body { margin:0 }
+a.btn { color:var(--ink); text-decoration:none }
+body { background:var(--bg); color:var(--ink); font:400 14px/1.5 var(--body); padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); padding-block:20px 48px }
+.wrap { max-width:1240px; margin:0 auto; display:grid; gap:20px }
+h1,h2,h3 { margin:0; text-wrap:balance }
+h1 { font:700 24px/1.15 var(--display) }
+h2 { font:600 18px/1.25 var(--display) }
+h3 { font:600 14px/1.35 var(--body) }
+p { margin:0 }
+.muted { color:var(--ink3) } .small { font-size:12.5px }
+.num { font-family:var(--mono); font-variant-numeric:tabular-nums }
+button,select,input,textarea { font:inherit; color:inherit }
+button { cursor:pointer }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px }
+
+header.top { display:flex; flex-wrap:wrap; gap:12px 20px; align-items:center; justify-content:space-between }
+.tools { display:flex; flex-wrap:wrap; gap:10px; align-items:center }
+nav.tabs { display:flex; gap:4px; overflow-x:auto; border-bottom:1px solid var(--line) }
+nav.tabs a { padding:8px 12px; color:var(--ink2); text-decoration:none; font-weight:500; border-bottom:2px solid transparent; white-space:nowrap }
+nav.tabs a[aria-current="page"] { color:var(--ink); border-color:var(--accent) }
+.btn { background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:6px 12px; font-weight:500 }
+.btn:hover { border-color:var(--ink3) }
+.btn.pri { background:var(--accent); border-color:var(--accent); color:var(--on-accent) }
+.btn.link { background:none; border:none; padding:0; color:var(--accent); font-weight:500; text-decoration:underline; text-underline-offset:2px }
+.btn.danger { color:var(--crit) }
+.seg-ctl { display:inline-flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; background:var(--surface) }
+.seg-ctl button { border:none; background:none; padding:6px 10px; color:var(--ink2) }
+.seg-ctl button[aria-pressed="true"] { background:var(--accent-soft); color:var(--ink); font-weight:600 }
+.cmp-label { color:var(--ink3); font-size:12.5px }
+body.ro .w { display:none !important }
+
+.banner { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; justify-content:space-between; background:var(--warn-soft); color:var(--ink); border-radius:6px; padding:8px 12px }
+.panel { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:16px; min-width:0 }
+.panel-head { display:flex; flex-wrap:wrap; gap:6px 12px; align-items:baseline; justify-content:space-between; margin-bottom:12px }
+.stack { display:grid; gap:20px; min-width:0 }
+.two { display:grid; grid-template-columns:minmax(0,5fr) minmax(0,3fr); gap:20px; align-items:start }
+@media (max-width:860px) { .two { grid-template-columns:minmax(0,1fr) } }
+
+.focus { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:flex-start; justify-content:space-between }
+.focus .eyebrow, .eyebrow { font:500 11.5px/1.3 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink3) }
+.focus p.big { font:600 20px/1.3 var(--display); max-width:60ch; margin-top:4px }
+
+.kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px }
+@media (max-width:760px) { .kpis { grid-template-columns:repeat(2,minmax(0,1fr)) } }
+.kpi { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:12px 14px; display:grid; gap:2px; align-content:start }
+.kpi .v { font:500 28px/1.15 var(--mono); font-variant-numeric:tabular-nums }
+.delta { font:500 12px/1.4 var(--mono); color:var(--ink3) }
+.delta.good { color:var(--good) } .delta.bad { color:var(--crit) }
+
+.obj { display:grid; gap:6px; padding-block:12px; border-top:1px solid var(--line) }
+.obj:first-child, .panel-head + .obj { border-top:none; padding-top:0 }
+.obj-title { display:flex; gap:10px; justify-content:space-between; align-items:baseline; flex-wrap:wrap }
+.obj button.t { background:none; border:none; padding:0; text-align:left; font-weight:600; font-size:15px }
+.obj button.t:hover { text-decoration:underline }
+.track { position:relative; height:8px; background:var(--track); border-radius:4px; margin-block:4px }
+.fill { position:absolute; inset:0 auto 0 0; background:var(--accent); border-radius:4px }
+.tick { position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--ink); box-shadow:0 0 0 1px var(--surface) }
+.meta { display:flex; flex-wrap:wrap; gap:2px 12px; color:var(--ink3); font-size:12.5px }
+
+.alert { display:flex; gap:10px; align-items:flex-start; padding-block:8px; border-top:1px solid var(--line); width:100%; background:none; border-inline:none; border-bottom:none; text-align:left }
+.alert:first-child { border-top:none; padding-top:0 }
+.alert:hover .a-t { text-decoration:underline }
+.pill { display:inline-flex; align-items:center; gap:4px; border-radius:4px; padding:1px 7px; font:500 11.5px/1.5 var(--mono); white-space:nowrap; background:var(--track); color:var(--ink2) }
+.pill.crit { background:var(--crit-soft); color:var(--crit) } .pill.warn { background:var(--warn-soft); color:var(--warn) } .pill.good { background:var(--good-soft); color:var(--good) } .pill.acc { background:var(--accent-soft); color:var(--ink) }
+
+.people { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr)); gap:14px; align-items:start }
+.person-head { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; margin-bottom:10px }
+.load { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px }
+.row-task { display:grid; gap:2px; width:100%; text-align:left; background:none; border:none; border-top:1px solid var(--line); padding:8px 0 }
+.row-task:hover .rt { text-decoration:underline }
+.rt { font-weight:500 }
+.why { color:var(--ink2); font-size:12.5px }
+.why b { font-weight:600; color:var(--ink) }
+
+.filters { display:flex; flex-wrap:wrap; gap:10px; align-items:end }
+.filters label { display:grid; gap:2px; font-size:12px; color:var(--ink3); min-width:0 }
+.field { background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:6px 8px; max-width:100%; color:var(--ink) }
+.board-wrap { overflow-x:auto; padding-bottom:6px }
+.board { display:grid; grid-template-columns:repeat(4,minmax(240px,1fr)); gap:12px; align-items:start }
+.col { background:color-mix(in srgb,var(--track) 55%,var(--bg)); border-radius:8px; padding:10px; min-height:140px; display:grid; gap:8px; align-content:start }
+.col.over { outline:2px dashed var(--accent); outline-offset:-2px }
+.col-h { display:flex; justify-content:space-between; font-weight:600; font-size:13px }
+.card { background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:9px 10px; display:grid; gap:5px; cursor:pointer; text-align:left; width:100% }
+.card:hover { border-color:var(--ink3) }
+.card.blocked { border-color:var(--crit) }
+.card .chips { display:flex; flex-wrap:wrap; gap:4px }
+
+.chart-plot { position:relative; height:170px; margin-left:26px }
+.gl { position:absolute; left:0; right:0; border-top:1px solid var(--line) }
+.gl span { position:absolute; left:-26px; top:-9px; width:20px; text-align:right; font:400 11px/1.5 var(--mono); color:var(--ink3) }
+.bars { position:absolute; inset:0; display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:6px }
+.bar { display:flex; flex-direction:column-reverse; gap:2px; height:100%; padding-inline:12%; border-radius:4px }
+.bar:hover,.bar:focus-visible { background:color-mix(in srgb,var(--ink3) 12%,transparent) }
+.seg { flex:none; min-height:2px } .seg.s1 { background:var(--s1) } .seg.s2 { background:var(--s2) }
+.seg:last-child { border-radius:4px 4px 0 0 }
+.xl { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:6px; margin:4px 0 0 26px; font:400 11px/1.4 var(--mono); color:var(--ink3); text-align:center }
+@media (max-width:560px) { .xl span:nth-child(even) { visibility:hidden } }
+.legend { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12.5px; color:var(--ink2); margin-top:10px }
+.key { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px }
+.table-wrap { overflow-x:auto }
+table { border-collapse:collapse; width:100% }
+th,td { text-align:left; padding:6px 10px 6px 0; border-top:1px solid var(--line); font-size:13px }
+th { font-weight:500; color:var(--ink3); border-top:none }
+td.n,th.n { text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums }
+details summary { cursor:pointer; color:var(--ink2); font-size:12.5px; margin-top:10px }
+.changes { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:16px; align-items:start }
+.changes ul,.steps { margin:6px 0 0; padding:0; list-style:none; display:grid; gap:6px }
+.notes { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:16px }
+.note dt { font-size:12px; color:var(--ink3); margin-top:8px } .note dd { margin:0; white-space:pre-wrap }
+.note dl { margin:0 }
+.steps { counter-reset:s; gap:12px; margin-top:12px }
+.steps li { display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; justify-content:space-between; border-top:1px solid var(--line); padding-top:12px }
+.steps li span.n { font:500 13px var(--mono); color:var(--accent); margin-right:8px }
+.empty { color:var(--ink3); padding:8px 0 }
+table.access { min-width:980px } table.access td { vertical-align:top } table.access a { color:var(--accent); font-weight:500 }
+.chips-a { display:flex; flex-wrap:wrap; gap:4px }
+.checks { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:6px }
+.form .checks label { display:inline-flex; flex-direction:row; align-items:center; gap:6px; font-weight:400 }
+
+dialog { border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); padding:20px; width:min(600px,calc(100vw - 32px)); max-height:calc(100dvh - 32px) }
+dialog::backdrop { background:rgba(10,16,28,.45) }
+.form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; border:none; padding:0; margin:14px 0 0 }
+.form label { display:grid; gap:3px; font-size:12.5px; font-weight:500; color:var(--ink2); min-width:0 }
+.form .full { grid-column:1/-1 }
+.form .field { width:100%; font-weight:400 }
+@media (max-width:480px) { .form { grid-template-columns:minmax(0,1fr) } }
+.dlg-foot { display:flex; flex-wrap:wrap; gap:8px; justify-content:space-between; margin-top:16px }
+.dlg-foot div { display:flex; gap:8px }
+.err { color:var(--crit); font-size:13px; grid-column:1/-1 }
+#tip { position:fixed; z-index:50; background:var(--ink); color:var(--bg); border-radius:6px; padding:6px 9px; font-size:12.5px; pointer-events:none; max-width:260px; white-space:pre-line }
+#toast { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(16px + env(safe-area-inset-bottom,0px)); z-index:60; background:var(--ink); color:var(--bg); border-radius:6px; padding:8px 14px; max-width:calc(100vw - 32px) }
+@media (prefers-reduced-motion:no-preference) { .fill { transition:width .25s ease } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Rumo da Equipe de Dados</h1>
+      <p class="muted small" id="sub">Para onde vamos, quem faz o quê e por quê.</p>
+    </div>
+    <div class="tools">
+      <span class="cmp-label" id="cmp-label">Comparar com</span>
+      <div class="seg-ctl" role="group" aria-labelledby="cmp-label" id="cmp"></div>
+      <a class="btn" href="/api/data?download=1">Baixar JSON</a>
+      <button class="btn pri w" data-act="new-task" type="button">Nova tarefa</button>
+    </div>
+  </header>
+  <div id="banner"></div>
+  <nav class="tabs" id="tabs" aria-label="Seções"></nav>
+  <main id="main" class="stack"><p class="muted">Carregando os dados da equipe…</p></main>
+</div>
+
+<dialog id="dlg"></dialog>
+<div id="tip" hidden></div>
+<div id="toast" role="status" hidden></div>
+
+<script>
+const DAY = 864e5;
+const ST = {a_fazer:'A fazer', andamento:'Em andamento', bloqueada:'Bloqueada', concluida:'Concluída', cancelada:'Cancelada'};
+const TIPOS = ['Pipeline / ETL','Dashboard / BI','Análise','Modelo / ML','Qualidade de dados','Infra / plataforma','Sustentação'];
+const COLS = ['pessoas','objetivos','tarefas','semanas','acessos'];
+const CATS = ['Banco de dados','BI / Dashboards','Cloud','Repositório de código','API / Integração','ERP / Sistema interno','Ferramenta','Outro'];
+const ROUTES = {panorama:'Panorama', equipe:'Equipe', tarefas:'Tarefas', objetivos:'Objetivos', evolucao:'Evolução', acessos:'Acessos'};
+const PERIODS = {7:'semana passada', 30:'mês passado', 90:'3 meses atrás'};
+const PERIOD_SHORT = {7:'Semana', 30:'Mês', 90:'3 meses'};
+const PERIOD_IN = {7:'na semana passada', 30:'no mês passado', 90:'há 3 meses'};
+
+let etag = null, writing = Promise.resolve(), readOnly = false, demo = false, demoData = null, phase = 'loading', slow = false;
+let live = {pessoas:[], objetivos:[], tarefas:[], semanas:[], acessos:[]};
+let period = 7;
+const filt = {pessoa:'', objetivo:'', tipo:'', busca:''};
+const filtA = {busca:'', cat:'', pessoa:''};
+try { const p = +localStorage.getItem('rumo.period'); if (PERIODS[p]) period = p; } catch (e) {}
+
+/* ---------- utilidades ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => { const x = new Date(d); return x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate()); };
+const fmtD = s => { if (!s) return ''; const [y, m, d] = String(s).slice(0, 10).split('-'); return d + '/' + m + '/' + y; };
+const shortD = t => { const x = new Date(t); return pad(x.getDate()) + '/' + pad(x.getMonth() + 1); };
+function mondayOf(t) { const d = new Date(t); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); }
+function weekKey(t) {
+  const d = new Date(t); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+  const w1 = new Date(d.getFullYear(), 0, 4);
+  const n = 1 + Math.round(((d - w1) / DAY - 3 + ((w1.getDay() + 6) % 7)) / 7);
+  return d.getFullYear() + '-W' + pad(n);
+}
+const data = () => demo ? demoData : live;
+const hist = t => Array.isArray(t.historico) ? t.historico : [];
+function statusAt(t, at) { let s = null; for (const h of hist(t)) if (+new Date(h.em) <= at) s = h.s; return s; }
+const isOpen = s => s === 'andamento' || s === 'bloqueada';
+function doneAt(t) { if (t.status !== 'concluida') return null; const h = hist(t); for (let i = h.length - 1; i >= 0; i--) if (h[i].s === 'concluida') return +new Date(h[i].em); return null; }
+function sinceStatus(t) { const h = hist(t); return h.length ? +new Date(h[h.length - 1].em) : Date.now(); }
+function lookups() { const D = data(); return { P: Object.fromEntries(D.pessoas.map(p => [p.id, p])), O: Object.fromEntries(D.objetivos.map(o => [o.id, o])) }; }
+const activePeople = () => data().pessoas.filter(p => p.ativo !== false).sort((a, b) => String(a.nome).localeCompare(b.nome, 'pt-BR'));
+const activeObjs = () => data().objetivos.filter(o => (o.status || 'ativo') === 'ativo').sort((a, b) => String(a.prazo || '9').localeCompare(String(b.prazo || '9')));
+
+function metrics(at) {
+  const { O } = lookups(), ts = data().tarefas.map(t => ({ t, s: statusAt(t, at) })).filter(x => x.s);
+  const open = ts.filter(x => isOpen(x.s));
+  const linked = open.filter(x => O[x.t.objetivoId]).length;
+  return {
+    wip: open.length,
+    blocked: open.filter(x => x.s === 'bloqueada').length,
+    linkedPct: open.length ? Math.round(linked / open.length * 100) : null,
+    people: new Set(open.map(x => x.t.pessoaId).filter(Boolean)).size,
+    late: ts.filter(x => (isOpen(x.s) || x.s === 'a_fazer') && x.t.prazo && x.t.prazo < ymd(at)).length,
+  };
+}
+const doneBetween = (a, b) => data().tarefas.filter(t => { const d = doneAt(t); return d && d > a && d <= b; });
+function objProgress(o, at) {
+  const ts = data().tarefas.filter(t => t.objetivoId === o.id).map(t => statusAt(t, at)).filter(s => s && s !== 'cancelada');
+  const done = ts.filter(s => s === 'concluida').length;
+  return { total: ts.length, done, pct: ts.length ? Math.round(done / ts.length * 100) : 0, open: ts.filter(isOpen).length };
+}
+function delta(now, then, opt = {}) {
+  if (now == null || then == null) return `<span class="delta">sem dado ${esc(PERIOD_IN[period])}</span>`;
+  const d = now - then, u = opt.unit || '', vs = opt.vs || PERIODS[period];
+  if (!d) return `<span class="delta">= sem mudança vs ${esc(vs)}</span>`;
+  const better = opt.good == null ? '' : (d > 0) === (opt.good === 'up') ? 'good' : 'bad';
+  return `<span class="delta ${better}">${d > 0 ? '▲ +' : '▼ '}${d}${u} vs ${esc(vs)}</span>`;
+}
+
+/* ---------- gravação ---------- */
+function toast(msg) { const el = $('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 3500); }
+const normalize = j => Object.fromEntries(COLS.map(c => [c, Array.isArray(j && j[c]) ? j[c] : []]));
+async function fetchData() {
+  const r = await fetch('/api/data', { cache: 'no-store', headers: etag ? { 'If-None-Match': etag } : {} });
+  if (r.status === 304) return false;
+  if (!r.ok) { const e = new Error('http'); e.status = r.status; throw e; }
+  const j = await r.json();
+  etag = r.headers.get('ETag');
+  live = normalize(j);
+  return true;
+}
+/* Grava o arquivo inteiro. Em caso de conflito, busca a versão nova e reaplica só esta alteração. */
+function commit(mutate) {
+  const run = async () => {
+    try {
+      for (let i = 0; i < 3; i++) {
+        const next = structuredClone(live); mutate(next);
+        const r = await fetch('/api/data', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...(etag ? { 'If-Match': etag } : { 'If-None-Match': '*' }) }, body: JSON.stringify(next) });
+        if (r.ok) { etag = r.headers.get('ETag'); live = next; if (!demo) render(); return true; }
+        if (r.status === 412) { etag = null; await fetchData(); continue; }
+        toast(r.status === 401 || r.status === 403 ? 'Sua sessão expirou ou você não tem permissão. Recarregue a página e entre de novo.' : r.status === 413 ? 'O arquivo de dados passou de 5 MB. Exclua registros antigos para continuar.' : 'Não foi possível salvar. Tente de novo em instantes.');
+        return false;
+      }
+      toast('Outras pessoas estão salvando ao mesmo tempo. Tente de novo em instantes.');
+      return false;
+    } catch (e) { toast('Não foi possível salvar. Verifique a conexão e tente de novo.'); return false; }
+  };
+  const p = writing.then(run, run);
+  writing = p.catch(() => {});
+  return p;
+}
+async function save(col, id, body) {
+  if (demo) { const L = demoData[col], i = L.findIndex(x => x.id === id); const doc = { id, ...body }; if (i >= 0) L[i] = doc; else L.push(doc); render(); return true; }
+  return commit(d => { const i = d[col].findIndex(x => x.id === id), doc = { id, ...body }; if (i >= 0) d[col][i] = doc; else d[col].push(doc); });
+}
+async function removeDoc(col, id) {
+  if (demo) { demoData[col] = demoData[col].filter(x => x.id !== id); render(); return true; }
+  return commit(d => { d[col] = d[col].filter(x => x.id !== id); });
+}
+function setStatus(t, s) {
+  if (t.status === s) return;
+  const { id, ...rest } = t;
+  save('tarefas', id, { ...rest, status: s, historico: [...hist(t), { s, em: new Date().toISOString() }] });
+}
+
+/* ---------- componentes ---------- */
+function statusPill(s) { const c = s === 'bloqueada' ? 'crit' : s === 'concluida' ? 'good' : s === 'andamento' ? 'acc' : ''; return `<span class="pill ${c}">${s === 'bloqueada' ? '! ' : s === 'concluida' ? '✓ ' : ''}${esc(ST[s] || s)}</span>`; }
+function whyLine(t, O) {
+  const o = O[t.objetivoId];
+  return `<span class="why">${o ? `<b>Objetivo:</b> ${esc(o.titulo)}` : '<b>Avulsa</b>'}${t.porque ? ` · ${esc(t.porque)}` : ''}${t.solicitante ? ` · pedido por ${esc(t.solicitante)}` : ''}</span>`;
+}
+function noData(msg, action) { return `<p class="empty">${esc(msg)}${action ? ' ' + action : ''}</p>`; }
+
+/* ---------- Panorama ---------- */
+function attention() {
+  const D = data(), { P } = lookups(), now = Date.now(), today = ymd(now), items = [];
+  for (const t of D.tarefas) {
+    if (t.status === 'bloqueada') items.push({ k: 0, c: 'crit', l: 'Bloqueada', t: t.titulo, s: (P[t.pessoaId]?.nome || 'Sem responsável') + (t.bloqueio ? ' · ' + t.bloqueio : ` · há ${Math.floor((now - sinceStatus(t)) / DAY)} dias`), act: 'task', id: t.id });
+    else if ((isOpen(t.status) || t.status === 'a_fazer') && t.prazo && t.prazo < today) items.push({ k: 1, c: 'warn', l: 'Atrasada', t: t.titulo, s: (P[t.pessoaId]?.nome || 'Sem responsável') + ' · prazo ' + fmtD(t.prazo), act: 'task', id: t.id });
+    else if (t.status === 'andamento' && now - sinceStatus(t) > 14 * DAY) items.push({ k: 2, c: 'warn', l: 'Parada', t: t.titulo, s: `Em andamento há ${Math.floor((now - sinceStatus(t)) / DAY)} dias`, act: 'task', id: t.id });
+    else if (isOpen(t.status) && !t.pessoaId) items.push({ k: 2, c: 'warn', l: 'Sem dono', t: t.titulo, s: 'Ninguém responde por esta tarefa', act: 'task', id: t.id });
+  }
+  for (const p of activePeople()) { const n = D.tarefas.filter(t => t.pessoaId === p.id && isOpen(t.status)).length; if (n >= 5) items.push({ k: 3, c: 'warn', l: 'Sobrecarga', t: p.nome, s: `${n} tarefas abertas ao mesmo tempo`, act: 'person', id: p.id }); }
+  for (const o of activeObjs()) { const q = objProgress(o, now); if (!q.open && q.pct < 100) items.push({ k: 3, c: 'warn', l: 'Sem ninguém', t: o.titulo, s: 'Objetivo ativo sem tarefa em andamento', act: 'objective', id: o.id }); }
+  return items.sort((a, b) => a.k - b.k);
+}
+function viewPanorama() {
+  const D = data(), now = Date.now(), then = now - period * DAY, m = metrics(now), m0 = metrics(then);
+  const doneNow = doneBetween(then, now).length, donePrev = doneBetween(then - period * DAY, then).length;
+  const note = D.semanas.find(s => s.id === weekKey(now));
+  const att = attention();
+  let onboarding = '';
+  if (!demo && !D.tarefas.length) {
+    onboarding = `<section class="panel"><h2>Monte o painel da equipe em três passos</h2><p class="muted">Cadastre quem faz parte, diga para onde a área quer ir e registre o que está sendo feito. O comparativo começa a contar a partir do primeiro registro.</p>
+    <ol class="steps">
+      <li><span><span class="n">1</span>Cadastre as pessoas da equipe <span class="muted">(${D.pessoas.length} até agora)</span></span><button class="btn w" data-act="new-person" type="button">Adicionar pessoa</button></li>
+      <li><span><span class="n">2</span>Escreva os objetivos da área e o motivo de cada um <span class="muted">(${D.objetivos.length} até agora)</span></span><button class="btn w" data-act="new-objective" type="button">Adicionar objetivo</button></li>
+      <li><span><span class="n">3</span>Registre as tarefas, com responsável e o porquê</span><button class="btn pri w" data-act="new-task" type="button">Adicionar tarefa</button></li>
+    </ol>
+    <p class="small muted" style="margin-top:12px">Quer ver antes como fica? <button class="btn link" data-act="demo-on" type="button">Abrir com dados de exemplo</button></p></section>`;
+  }
+  const objs = activeObjs();
+  const avulsas = D.tarefas.filter(t => isOpen(t.status) && !lookups().O[t.objetivoId]).length;
+  const avulsas0 = D.tarefas.filter(t => isOpen(statusAt(t, then)) && !lookups().O[t.objetivoId]).length;
+  return `${onboarding}
+  <section class="panel focus">
+    <div style="min-width:0"><div class="eyebrow">Foco da semana · ${esc(weekKey(now))}</div>
+    <p class="big">${note?.foco ? esc(note.foco) : '<span class="muted">Ainda não definido para esta semana.</span>'}</p></div>
+    <button class="btn w" data-act="note" data-id="${esc(weekKey(now))}" type="button">${note?.foco ? 'Editar' : 'Definir foco'}</button>
+  </section>
+  <section class="kpis" aria-label="Indicadores">
+    <div class="kpi"><span class="small muted">Em andamento agora</span><span class="v">${m.wip}</span>${delta(m.wip, m0.wip)}</div>
+    <div class="kpi"><span class="small muted">Concluídas em ${period} dias</span><span class="v">${doneNow}</span>${delta(doneNow, donePrev, { good: 'up', vs: `${period} dias antes` })}</div>
+    <div class="kpi"><span class="small muted">Ligado a objetivo</span><span class="v">${m.linkedPct == null ? '–' : m.linkedPct + '%'}</span>${delta(m.linkedPct, m0.linkedPct, { good: 'up', unit: ' p.p.' })}</div>
+    <div class="kpi"><span class="small muted">Bloqueadas</span><span class="v">${m.blocked}</span>${delta(m.blocked, m0.blocked, { good: 'down' })}</div>
+  </section>
+  <div class="two">
+    <section class="panel">
+      <div class="panel-head"><h2>Para onde estamos indo</h2><span class="small muted">A marca no trilho mostra onde estava ${esc(PERIOD_IN[period])}</span></div>
+      ${objs.length ? objs.map(o => objRow(o, now, then)).join('') : noData('Nenhum objetivo ativo.', '<button class="btn link w" data-act="new-objective" type="button">Adicionar objetivo</button>')}
+      <div class="obj"><div class="obj-title"><span style="font-weight:600">Demandas avulsas</span><span class="num small">${avulsas} ${avulsas === 1 ? 'aberta' : 'abertas'} (era ${avulsas0})</span></div><p class="why">Trabalho em andamento que não leva a nenhum objetivo da área.</p></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>Precisa de atenção</h2><span class="num small muted">${att.length}</span></div>
+      ${att.length ? att.slice(0, 9).map(a => `<button class="alert" type="button" data-act="${a.act}" data-id="${esc(a.id)}"><span class="pill ${a.c}">${esc(a.l)}</span><span style="min-width:0"><span class="a-t" style="font-weight:500">${esc(a.t)}</span><br><span class="small muted">${esc(a.s)}</span></span></button>`).join('') : noData('Nada bloqueado, atrasado ou parado.')}
+      ${att.length > 9 ? `<p class="small muted" style="margin-top:8px">E mais ${att.length - 9} em Tarefas.</p>` : ''}
+    </section>
+  </div>`;
+}
+function objRow(o, now, then) {
+  const { P } = lookups(), q = objProgress(o, now), q0 = objProgress(o, then);
+  const tipT = `${q.pct}% agora (${q.done} de ${q.total})\n${q0.pct}% ${PERIOD_IN[period]} (${q0.done} de ${q0.total})`;
+  const d = q.pct - q0.pct;
+  return `<div class="obj">
+    <div class="obj-title"><button class="t" type="button" data-act="objective" data-id="${esc(o.id)}">${esc(o.titulo)}</button><span class="num small">${q.pct}% <span class="${d > 0 ? 'delta good' : 'delta'}">${d > 0 ? '▲ +' + d : d < 0 ? '▼ ' + d : '='} p.p.</span></span></div>
+    <div class="track" data-tip="${esc(tipT)}"><div class="fill" style="width:${q.pct}%"></div><div class="tick" style="left:calc(${q0.pct}% - 1px)"></div></div>
+    ${o.porque ? `<p class="why">${esc(o.porque)}</p>` : ''}
+    <div class="meta"><span>${q.done} de ${q.total} tarefas</span><span>${q.open} ${q.open === 1 ? 'aberta' : 'abertas'}</span>${o.donoId && P[o.donoId] ? `<span>Dono: ${esc(P[o.donoId].nome)}</span>` : ''}${o.prazo ? `<span>Até ${esc(fmtD(o.prazo))}</span>` : ''}</div>
+  </div>`;
+}
+
+/* ---------- Equipe ---------- */
+function viewEquipe() {
+  const D = data(), { O } = lookups(), now = Date.now(), then = now - period * DAY;
+  const card = (p, id) => {
+    const mine = D.tarefas.filter(t => (t.pessoaId || '') === id);
+    const open = mine.filter(t => isOpen(t.status)).sort((a, b) => (a.status === 'bloqueada' ? -1 : 1) - (b.status === 'bloqueada' ? -1 : 1));
+    const next = mine.filter(t => t.status === 'a_fazer').length;
+    const done = doneBetween(then, now).filter(t => (t.pessoaId || '') === id).length;
+    const linked = open.filter(t => O[t.objetivoId]).length;
+    return `<article class="panel" id="p-${esc(id || 'none')}">
+      <div class="person-head"><div><h2>${esc(p.nome)}</h2><span class="small muted">${esc(p.papel || '')}</span></div>${id ? `<button class="btn w" data-act="person" data-id="${esc(id)}" type="button">Editar</button>` : ''}</div>
+      <div class="load"><span class="pill ${open.length >= 5 ? 'warn' : 'acc'}">${open.length} ${open.length === 1 ? 'aberta' : 'abertas'}</span><span class="pill">${next} na fila</span><span class="pill good">✓ ${done} em ${period}d</span>${open.length ? `<span class="pill">${linked} de ${open.length} em objetivos</span>` : ''}</div>
+      ${open.length ? open.map(t => `<button class="row-task" type="button" data-act="task" data-id="${esc(t.id)}"><span class="rt">${esc(t.titulo)} ${t.status === 'bloqueada' ? statusPill(t.status) : ''}</span>${whyLine(t, O)}</button>`).join('') : '<p class="small muted">Sem tarefa em andamento.</p>'}
+    </article>`;
+  };
+  const orphan = D.tarefas.some(t => !t.pessoaId && isOpen(t.status));
+  const ppl = activePeople();
+  return `<div class="panel-head" style="margin:0"><h2>Quem está fazendo o quê</h2><button class="btn w" data-act="new-person" type="button">Adicionar pessoa</button></div>
+  ${ppl.length || orphan ? `<div class="people">${ppl.map(p => card(p, p.id)).join('')}${orphan ? card({ nome: 'Sem responsável', papel: 'Tarefas abertas sem dono' }, '') : ''}</div>` : `<section class="panel">${noData('Cadastre as pessoas da equipe para ver a carga de cada uma aqui.')}</section>`}`;
+}
+
+/* ---------- Tarefas ---------- */
+function viewTarefas() {
+  const D = data();
+  const opt = (v, l, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
+  return `<div class="filters panel" style="padding:12px">
+    <label for="f-busca">Buscar<input id="f-busca" class="field" data-filter="busca" value="${esc(filt.busca)}" placeholder="Título ou motivo"></label>
+    <label for="f-pessoa">Pessoa<select id="f-pessoa" class="field" data-filter="pessoa">${opt('', 'Todas', filt.pessoa)}${activePeople().map(p => opt(p.id, p.nome, filt.pessoa)).join('')}</select></label>
+    <label for="f-objetivo">Objetivo<select id="f-objetivo" class="field" data-filter="objetivo">${opt('', 'Todos', filt.objetivo)}${opt('_none', 'Avulsas', filt.objetivo)}${D.objetivos.map(o => opt(o.id, o.titulo, filt.objetivo)).join('')}</select></label>
+    <label for="f-tipo">Tipo<select id="f-tipo" class="field" data-filter="tipo">${opt('', 'Todos', filt.tipo)}${TIPOS.map(t => opt(t, t, filt.tipo)).join('')}</select></label>
+    <p class="small muted w" style="margin-left:auto">Arraste um cartão para mudar o status, ou abra para editar.</p>
+  </div><div id="board-host">${boardHtml()}</div>`;
+}
+function boardHtml() {
+  const D = data(), { P, O } = lookups(), q = filt.busca.trim().toLowerCase(), now = Date.now(), today = ymd(now);
+  const vis = D.tarefas.filter(t =>
+    (!filt.pessoa || t.pessoaId === filt.pessoa) &&
+    (!filt.objetivo || (filt.objetivo === '_none' ? !O[t.objetivoId] : t.objetivoId === filt.objetivo)) &&
+    (!filt.tipo || t.tipo === filt.tipo) &&
+    (!q || (String(t.titulo) + ' ' + String(t.porque || '')).toLowerCase().includes(q)));
+  const col = s => {
+    let L = vis.filter(t => t.status === s);
+    let note = '';
+    if (s === 'concluida') { const n = L.length; L = L.filter(t => (doneAt(t) || 0) > now - 14 * DAY).sort((a, b) => doneAt(b) - doneAt(a)); if (n > L.length) note = `<p class="small muted">Mostrando as últimas 2 semanas. Mais ${n - L.length} concluídas antes disso.</p>`; }
+    return `<div class="col" data-col="${s}"><div class="col-h"><span>${esc(ST[s])}</span><span class="num">${L.length}</span></div>${L.map(t => `
+      <div class="card ${s === 'bloqueada' ? 'blocked' : ''}" ${readOnly ? '' : 'draggable="true"'} role="button" tabindex="0" data-act="task" data-id="${esc(t.id)}">
+        <span style="font-weight:500">${esc(t.titulo)}</span>
+        ${whyLine(t, O)}
+        <div class="chips"><span class="pill">${esc(P[t.pessoaId]?.nome || 'Sem dono')}</span>${t.tipo ? `<span class="pill">${esc(t.tipo)}</span>` : ''}${t.prazo ? `<span class="pill ${t.prazo < today && s !== 'concluida' ? 'warn' : ''}">${t.prazo < today && s !== 'concluida' ? 'Atrasada · ' : ''}${esc(shortD(t.prazo + 'T12:00'))}</span>` : ''}</div>
+      </div>`).join('')}${note}</div>`;
+  };
+  return `<div class="board-wrap"><div class="board">${['a_fazer', 'andamento', 'bloqueada', 'concluida'].map(col).join('')}</div></div>`;
+}
+
+/* ---------- Objetivos ---------- */
+function viewObjetivos() {
+  const D = data(), { P, O } = lookups(), now = Date.now(), then = now - period * DAY;
+  const block = o => {
+    const ts = D.tarefas.filter(t => t.objetivoId === o.id && t.status !== 'cancelada');
+    const people = [...new Set(ts.filter(t => isOpen(t.status)).map(t => P[t.pessoaId]?.nome).filter(Boolean))];
+    const order = { bloqueada: 0, andamento: 1, a_fazer: 2, concluida: 3 };
+    return `<article class="panel" id="o-${esc(o.id)}">${objRow(o, now, then)}
+      <p class="small muted" style="margin-bottom:6px">Envolvidos agora: ${people.length ? esc(people.join(', ')) : 'ninguém'}</p>
+      ${ts.sort((a, b) => order[a.status] - order[b.status]).map(t => `<button class="row-task" type="button" data-act="task" data-id="${esc(t.id)}"><span class="rt">${esc(t.titulo)} ${statusPill(t.status)}</span><span class="small muted">${esc(P[t.pessoaId]?.nome || 'Sem dono')}</span></button>`).join('') || '<p class="small muted">Nenhuma tarefa ligada ainda.</p>'}
+    </article>`;
+  };
+  const avulsas = D.tarefas.filter(t => isOpen(t.status) && !O[t.objetivoId]);
+  const closed = D.objetivos.filter(o => (o.status || 'ativo') !== 'ativo');
+  return `<div class="panel-head" style="margin:0"><h2>Objetivos da área</h2><button class="btn w" data-act="new-objective" type="button">Adicionar objetivo</button></div>
+  ${activeObjs().map(block).join('') || `<section class="panel">${noData('Escreva aonde a área quer chegar e por quê. As tarefas se ligam a esses objetivos.')}</section>`}
+  ${avulsas.length ? `<section class="panel"><div class="panel-head"><h2>Abertas sem objetivo</h2><span class="num small muted">${avulsas.length}</span></div>${avulsas.map(t => `<button class="row-task" type="button" data-act="task" data-id="${esc(t.id)}"><span class="rt">${esc(t.titulo)}</span><span class="why">${esc(P[t.pessoaId]?.nome || 'Sem dono')}${t.porque ? ' · ' + esc(t.porque) : ''}</span></button>`).join('')}</section>` : ''}
+  ${closed.length ? `<section class="panel"><h2>Encerrados</h2>${closed.map(o => `<button class="row-task" type="button" data-act="objective" data-id="${esc(o.id)}"><span class="rt">${esc(o.titulo)}</span><span class="small muted">${esc(o.status === 'concluido' ? 'Concluído' : 'Pausado')}</span></button>`).join('')}</section>` : ''}`;
+}
+
+/* ---------- Evolução ---------- */
+function weeklyChart() {
+  const { O } = lookups(), now = Date.now(), cur = mondayOf(now), weeks = [];
+  for (let i = 11; i >= 0; i--) { const a = mondayOf(cur - i * 7 * DAY + DAY), b = mondayOf(a + 8 * DAY); const L = doneBetween(a - 1, b - 1); const s1 = L.filter(t => O[t.objetivoId]).length; weeks.push({ a, s1, s2: L.length - s1, cur: i === 0 }); }
+  const max = Math.max(4, ...weeks.map(w => w.s1 + w.s2)), top = Math.ceil(max / 2) * 2;
+  const totalAll = weeks.slice(-4).reduce((n, w) => n + w.s1 + w.s2, 0), linkedAll = weeks.slice(-4).reduce((n, w) => n + w.s1, 0);
+  const head = totalAll ? `Nas últimas 4 semanas, ${Math.round(linkedAll / totalAll * 100)}% do que foi concluído estava ligado a um objetivo.` : 'Ainda não há tarefas concluídas nas últimas 4 semanas.';
+  return `<section class="panel"><div class="panel-head"><h2>Entregas por semana</h2><span class="small muted">Tarefas concluídas, últimas 12 semanas</span></div>
+    <p style="margin-bottom:14px">${esc(head)}</p>
+    <div class="chart-plot" role="img" aria-label="Barras empilhadas de tarefas concluídas por semana. ${esc(head)}">
+      ${[top, top / 2, 0].map(v => `<div class="gl" style="top:${100 - v / top * 100}%"><span>${v}</span></div>`).join('')}
+      <div class="bars">${weeks.map(w => `<div class="bar" tabindex="0" data-tip="${esc(`Semana de ${shortD(w.a)}${w.cur ? ' (em curso)' : ''}\nLigadas a objetivo: ${w.s1}\nAvulsas: ${w.s2}`)}">${w.s1 ? `<div class="seg s1" style="height:${w.s1 / top * 100}%"></div>` : ''}${w.s2 ? `<div class="seg s2" style="height:${w.s2 / top * 100}%"></div>` : ''}</div>`).join('')}</div>
+    </div>
+    <div class="xl">${weeks.map(w => `<span>${shortD(w.a)}</span>`).join('')}</div>
+    <div class="legend"><span><i class="key" style="background:var(--s1)"></i>Ligadas a objetivo</span><span><i class="key" style="background:var(--s2)"></i>Avulsas</span></div>
+    <details><summary>Ver como tabela</summary><div class="table-wrap"><table><thead><tr><th>Semana</th><th class="n">Ligadas a objetivo</th><th class="n">Avulsas</th></tr></thead><tbody>${weeks.map(w => `<tr><td class="num">${shortD(w.a)}${w.cur ? ' (em curso)' : ''}</td><td class="n">${w.s1}</td><td class="n">${w.s2}</td></tr>`).join('')}</tbody></table></div></details>
+  </section>`;
+}
+function noteBlock(key, label, editable) {
+  const n = data().semanas.find(s => s.id === key);
+  return `<div class="note"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><h3>${esc(label)} <span class="num muted small">${esc(key)}</span></h3>${editable ? `<button class="btn link w" data-act="note" data-id="${esc(key)}" type="button">Editar</button>` : ''}</div>
+    ${n && (n.foco || n.riscos || n.decisoes) ? `<dl>${n.foco ? `<dt>Foco</dt><dd>${esc(n.foco)}</dd>` : ''}${n.riscos ? `<dt>Riscos</dt><dd>${esc(n.riscos)}</dd>` : ''}${n.decisoes ? `<dt>Decisões</dt><dd>${esc(n.decisoes)}</dd>` : ''}</dl>` : '<p class="small muted">Sem registro nesta semana.</p>'}</div>`;
+}
+function viewEvolucao() {
+  const D = data(), { P, O } = lookups(), now = Date.now(), then = now - period * DAY, m = metrics(now), m0 = metrics(then);
+  const doneL = doneBetween(then, now).sort((a, b) => doneAt(b) - doneAt(a));
+  const donePrev = doneBetween(then - period * DAY, then).length;
+  const lastTo = (t, s) => { const h = hist(t); for (let i = h.length - 1; i >= 0; i--) if (h[i].s === s) return +new Date(h[i].em); return 0; };
+  const started = D.tarefas.filter(t => t.status === 'andamento' && lastTo(t, 'andamento') > then);
+  const blocked = D.tarefas.filter(t => t.status === 'bloqueada' && lastTo(t, 'bloqueada') > then);
+  const row = (l, a, b, u = '') => `<tr><td>${esc(l)}</td><td class="n">${a == null ? '–' : a + u}</td><td class="n">${b == null ? '–' : b + u}</td><td class="n">${a == null || b == null ? '–' : (b - a > 0 ? '+' : '') + (b - a)}</td></tr>`;
+  const list = (title, L, pill) => `<div><h3>${esc(title)} <span class="num muted">${L.length}</span></h3>${L.length ? `<ul>${L.slice(0, 8).map(t => `<li><button class="btn link" style="font-weight:400;text-align:left" type="button" data-act="task" data-id="${esc(t.id)}">${esc(t.titulo)}</button> <span class="small muted">${esc(P[t.pessoaId]?.nome || 'Sem dono')}${O[t.objetivoId] ? '' : ' · avulsa'}</span></li>`).join('')}</ul>${L.length > 8 ? `<p class="small muted">E mais ${L.length - 8}.</p>` : ''}` : '<p class="small muted">Nenhuma.</p>'}</div>`;
+  const pastKeys = D.semanas.map(s => s.id).filter(k => k !== weekKey(now) && k !== weekKey(then)).sort().reverse();
+  return `${weeklyChart()}
+  <section class="panel"><div class="panel-head"><h2>Agora e ${esc(PERIOD_IN[period])}</h2><span class="small muted">${esc(shortD(then))} até hoje</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Indicador</th><th class="n">Em ${esc(shortD(then))}</th><th class="n">Agora</th><th class="n">Mudança</th></tr></thead><tbody>
+      ${row('Tarefas em andamento', m0.wip, m.wip)}${row(`Concluídas em ${period} dias`, donePrev, doneL.length)}${row('Ligado a objetivo', m0.linkedPct, m.linkedPct, '%')}${row('Bloqueadas', m0.blocked, m.blocked)}${row('Atrasadas', m0.late, m.late)}${row('Pessoas com tarefa aberta', m0.people, m.people)}
+    </tbody></table></div>
+  </section>
+  <section class="panel"><h2 style="margin-bottom:12px">O que mudou desde ${esc(shortD(then))}</h2><div class="changes">${list('Concluídas', doneL)}${list('Começaram', started)}${list('Bloquearam', blocked)}</div></section>
+  <section class="panel"><div class="panel-head"><h2>Diário da área</h2><span class="small muted">Foco, riscos e decisões de cada semana</span></div>
+    <div class="notes">${noteBlock(weekKey(now), 'Esta semana', true)}${noteBlock(weekKey(then), PERIODS[period][0].toUpperCase() + PERIODS[period].slice(1), true)}</div>
+    ${pastKeys.length ? `<details><summary>Outras semanas (${pastKeys.length})</summary><div class="notes" style="margin-top:10px">${pastKeys.map(k => noteBlock(k, 'Semana', true)).join('')}</div></details>` : ''}
+  </section>`;
+}
+
+/* ---------- Acessos ---------- */
+const REVIEW_DAYS = 90;
+const reviewLate = a => !a.revisadoEm || (Date.now() - new Date(a.revisadoEm + 'T12:00').getTime()) > REVIEW_DAYS * DAY;
+function viewAcessos() {
+  const D = data(), opt = (v, l, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
+  return `<div class="panel-head" style="margin:0"><div><h2>Acessos da equipe</h2><p class="small muted">Onde fica cada sistema, quem responde por ele, como pedir acesso e quem já tem.</p></div><button class="btn w" data-act="new-access" type="button">Adicionar sistema</button></div>
+  <div class="banner"><span><b>Não coloque senhas, tokens ou chaves aqui.</b> Todos com acesso ao painel leem esta página. Registre só onde a credencial está guardada, por exemplo o nome do item no cofre de senhas.</span></div>
+  <div class="filters panel" style="padding:12px">
+    <label for="f-a-busca">Buscar<input id="f-a-busca" class="field" data-afilter="busca" value="${esc(filtA.busca)}" placeholder="Sistema ou uso"></label>
+    <label for="f-a-cat">Categoria<select id="f-a-cat" class="field" data-afilter="cat">${opt('', 'Todas', filtA.cat)}${CATS.map(c => opt(c, c, filtA.cat)).join('')}</select></label>
+    <label for="f-a-pessoa">Quem tem acesso<select id="f-a-pessoa" class="field" data-afilter="pessoa">${opt('', 'Todos', filtA.pessoa)}${D.pessoas.map(p => opt(p.id, p.nome, filtA.pessoa)).join('')}</select></label>
+  </div><div id="access-host">${accessHtml()}</div>`;
+}
+function accessHtml() {
+  const D = data(), { P } = lookups(), q = filtA.busca.trim().toLowerCase();
+  if (!D.acessos.length) return `<section class="panel">${noData('Nenhum sistema cadastrado ainda. Comece pelos que a equipe usa todo dia: banco de dados, BI e repositório.')}</section>`;
+  const L = D.acessos.filter(a => (!filtA.cat || a.categoria === filtA.cat) && (!filtA.pessoa || (a.pessoas || []).includes(filtA.pessoa)) && (!q || (String(a.nome) + ' ' + String(a.paraQue || '')).toLowerCase().includes(q))).sort((a, b) => String(a.nome).localeCompare(b.nome, 'pt-BR'));
+  const isGone = id => P[id] && P[id].ativo === false;
+  const late = L.filter(reviewLate).length, revoke = L.filter(a => (a.pessoas || []).some(isGone)).length, noOwner = L.filter(a => !P[a.donoId]).length;
+  const rows = L.map(a => {
+    const ppl = (a.pessoas || []).filter(id => P[id]);
+    return `<tr>
+      <td><button class="btn link" style="text-align:left" type="button" data-act="access" data-id="${esc(a.id)}">${esc(a.nome)}</button>${a.paraQue ? `<br><span class="why">${esc(a.paraQue)}</span>` : ''}<br><span class="small muted">${esc(a.categoria || '')}</span></td>
+      <td>${/^https?:\/\//i.test(a.url || '') ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">Abrir</a>` : a.url ? `<span class="num small">${esc(a.url)}</span>` : '<span class="muted">–</span>'}</td>
+      <td>${P[a.donoId] ? esc(P[a.donoId].nome) : '<span class="pill warn">Sem responsável</span>'}</td>
+      <td>${esc(a.comoSolicitar || '–')}</td>
+      <td>${esc(a.ondeCredencial || '–')}</td>
+      <td><div class="chips-a">${ppl.map(id => isGone(id) ? `<span class="pill crit">! Revogar: ${esc(P[id].nome)}</span>` : `<span class="pill">${esc(P[id].nome)}</span>`).join('') || '<span class="muted">Ninguém</span>'}</div></td>
+      <td>${reviewLate(a) ? `<span class="pill warn">Revisar</span><br>` : ''}<span class="num small">${a.revisadoEm ? esc(fmtD(a.revisadoEm)) : 'Nunca'}</span></td>
+    </tr>`;
+  }).join('');
+  return `<section class="panel"><div class="load"><span class="pill acc">${L.length} ${L.length === 1 ? 'sistema' : 'sistemas'}</span>${revoke ? `<span class="pill crit">! ${revoke} com acesso a revogar</span>` : ''}${late ? `<span class="pill warn">${late} com revisão vencida (${REVIEW_DAYS} dias)</span>` : ''}${noOwner ? `<span class="pill warn">${noOwner} sem responsável</span>` : ''}</div>
+  ${L.length ? `<div class="table-wrap"><table class="access"><thead><tr><th>Sistema</th><th>Endereço</th><th>Responsável</th><th>Como pedir acesso</th><th>Onde está a credencial</th><th>Quem tem acesso</th><th>Revisado em</th></tr></thead><tbody>${rows}</tbody></table></div>` : noData('Nenhum sistema com esses filtros.')}</section>`;
+}
+const SECRET_RE = /(senha|password|passwd|pwd|token|secret|segredo|api[ _-]?key|chave)\s*[:=]\s*\S+/i, URL_CRED_RE = /:\/\/[^\/\s:@]+:[^\/\s@]+@/;
+function accessForm(a) {
+  const v = a || { revisadoEm: ymd(Date.now()), pessoas: [] }, cur = v.pessoas || [];
+  openForm.check = d => Object.values(d).some(x => typeof x === 'string' && (SECRET_RE.test(x) || URL_CRED_RE.test(x))) ? 'Parece haver uma senha, token ou chave no texto. Tire o valor e informe só onde a credencial está guardada.' : '';
+  const people = data().pessoas.filter(p => p.ativo !== false || cur.includes(p.id));
+  openForm({
+    title: a ? 'Editar sistema' : 'Novo sistema',
+    fields:
+      fld('a-nome', 'Sistema', `<input id="a-nome" name="nome" class="field" required maxlength="100" value="${esc(v.nome)}" placeholder="Ex.: Power BI">`) +
+      fld('a-cat', 'Categoria', `<select id="a-cat" name="categoria" class="field">${options(CATS.map(c => [c, c]), v.categoria || 'Ferramenta')}</select>`) +
+      fld('a-url', 'Endereço (link ou servidor)', `<input id="a-url" name="url" class="field" maxlength="300" value="${esc(v.url)}">`, true) +
+      fld('a-para', 'Para que serve', `<input id="a-para" name="paraQue" class="field" maxlength="200" value="${esc(v.paraQue)}">`, true) +
+      fld('a-dono', 'Responsável na equipe', `<select id="a-dono" name="donoId" class="field">${options([['', 'Sem responsável'], ...activePeople().map(p => [p.id, p.nome])], v.donoId)}</select>`) +
+      fld('a-rev', 'Revisado em', `<input id="a-rev" type="date" name="revisadoEm" class="field" value="${esc(v.revisadoEm)}">`) +
+      fld('a-como', 'Como pedir acesso', `<input id="a-como" name="comoSolicitar" class="field" maxlength="200" value="${esc(v.comoSolicitar)}" placeholder="Ex.: chamado para a TI, categoria Acessos">`, true) +
+      fld('a-cred', 'Onde está a credencial (nunca a senha)', `<input id="a-cred" name="ondeCredencial" class="field" maxlength="200" value="${esc(v.ondeCredencial)}" placeholder="Ex.: login pessoal via SSO, ou item no cofre de senhas">`, true) +
+      `<div class="full"><span class="small" style="font-weight:500;color:var(--ink2)">Quem tem acesso</span><div class="checks">${people.map(p => `<label for="a-p-${esc(p.id)}"><input type="checkbox" id="a-p-${esc(p.id)}" data-person="${esc(p.id)}"${cur.includes(p.id) ? ' checked' : ''}> ${esc(p.nome)}</label>`).join('') || '<span class="small muted">Cadastre a equipe primeiro.</span>'}</div></div>`,
+    onSave: d => {
+      const pessoas = [...$('dlg').querySelectorAll('[data-person]:checked')].map(x => x.dataset.person);
+      return save('acessos', a?.id || newId(), { nome: d.nome.trim(), categoria: d.categoria, url: d.url.trim(), paraQue: d.paraQue.trim(), donoId: d.donoId, revisadoEm: d.revisadoEm, comoSolicitar: d.comoSolicitar.trim(), ondeCredencial: d.ondeCredencial.trim(), pessoas, criadoEm: a?.criadoEm || new Date().toISOString() });
+    },
+    onDelete: a ? () => removeDoc('acessos', a.id) : null,
+  });
+}
+
+/* ---------- diálogos ---------- */
+function openForm({ title, fields, onSave, onDelete, deleteLabel }) {
+  const dlg = $('dlg');
+  dlg.innerHTML = `<form id="dlg-form"><h2>${esc(title)}</h2><fieldset class="form" ${readOnly ? 'disabled' : ''}>${fields}<p class="err" id="dlg-err" hidden></p></fieldset>
+    <div class="dlg-foot"><span>${onDelete && !readOnly ? `<button class="btn danger" id="dlg-del" type="button">${esc(deleteLabel || 'Excluir')}</button>` : ''}</span>
+    <div><button class="btn" id="dlg-cancel" type="button">${readOnly ? 'Fechar' : 'Cancelar'}</button>${readOnly ? '' : '<button class="btn pri" type="submit">Salvar</button>'}</div></div></form>`;
+  $('dlg-cancel').onclick = () => dlg.close();
+  const del = $('dlg-del');
+  if (del) del.onclick = async () => { if (del.dataset.armed) { if (await onDelete()) dlg.close(); } else { del.dataset.armed = '1'; del.textContent = 'Confirmar exclusão'; } };
+  $('dlg-form').onsubmit = async e => {
+    e.preventDefault();
+    if (readOnly) return dlg.close();
+    const err = onValidate(new FormData(e.target));
+    if (err) { const el = $('dlg-err'); el.textContent = err; el.hidden = false; return; }
+    if (await onSave(Object.fromEntries(new FormData(e.target)))) dlg.close();
+  };
+  function onValidate(fd) { return openForm.check ? openForm.check(Object.fromEntries(fd)) : ''; }
+  dlg.showModal();
+}
+const fld = (id, label, inner, full) => `<label class="${full ? 'full' : ''}" for="${id}">${esc(label)}${inner}</label>`;
+const options = (L, cur) => L.map(([v, l]) => `<option value="${esc(v)}"${v === (cur ?? '') ? ' selected' : ''}>${esc(l)}</option>`).join('');
+
+function taskForm(t, preset = {}) {
+  const v = t || { status: 'a_fazer', ...preset };
+  openForm.check = d => (!d.objetivoId && !d.porque.trim()) ? 'Diga por que esta tarefa existe: escolha um objetivo ou escreva o motivo.' : '';
+  openForm({
+    title: t ? 'Editar tarefa' : 'Nova tarefa',
+    fields:
+      fld('t-titulo', 'O que será feito', `<input id="t-titulo" name="titulo" class="field" required maxlength="160" value="${esc(v.titulo)}">`, true) +
+      fld('t-objetivo', 'Objetivo que esta tarefa move', `<select id="t-objetivo" name="objetivoId" class="field">${options([['', 'Nenhum (demanda avulsa)'], ...data().objetivos.filter(o => (o.status || 'ativo') === 'ativo' || o.id === v.objetivoId).map(o => [o.id, o.titulo])], v.objetivoId)}</select>`, true) +
+      fld('t-porque', 'Por que estamos fazendo', `<textarea id="t-porque" name="porque" class="field" rows="2" maxlength="400" placeholder="Que decisão ou problema isso resolve?">${esc(v.porque)}</textarea>`, true) +
+      fld('t-pessoa', 'Responsável', `<select id="t-pessoa" name="pessoaId" class="field">${options([['', 'Sem responsável'], ...data().pessoas.filter(p => p.ativo !== false || p.id === v.pessoaId).map(p => [p.id, p.nome])], v.pessoaId)}</select>`) +
+      fld('t-status', 'Status', `<select id="t-status" name="status" class="field">${options(Object.entries(ST), v.status)}</select>`) +
+      fld('t-tipo', 'Tipo', `<select id="t-tipo" name="tipo" class="field">${options([['', 'Não definido'], ...TIPOS.map(x => [x, x])], v.tipo)}</select>`) +
+      fld('t-sol', 'Quem pediu', `<input id="t-sol" name="solicitante" class="field" maxlength="80" placeholder="Ex.: Comercial" value="${esc(v.solicitante)}">`) +
+      fld('t-prazo', 'Prazo', `<input id="t-prazo" type="date" name="prazo" class="field" value="${esc(v.prazo)}">`) +
+      fld('t-bloqueio', 'O que está travando (se bloqueada)', `<input id="t-bloqueio" name="bloqueio" class="field" maxlength="160" value="${esc(v.bloqueio)}">`),
+    onSave: d => {
+      const id = t?.id || newId(), nowIso = new Date().toISOString();
+      const historico = t ? (d.status !== t.status ? [...hist(t), { s: d.status, em: nowIso }] : [...hist(t)]) : [{ s: d.status, em: nowIso }];
+      return save('tarefas', id, { titulo: d.titulo.trim(), objetivoId: d.objetivoId, porque: d.porque.trim(), pessoaId: d.pessoaId, status: d.status, tipo: d.tipo, solicitante: d.solicitante.trim(), prazo: d.prazo, bloqueio: d.status === 'bloqueada' ? d.bloqueio.trim() : '', historico, criadoEm: t?.criadoEm || nowIso });
+    },
+    onDelete: t ? () => removeDoc('tarefas', t.id) : null,
+  });
+}
+function objectiveForm(o) {
+  const v = o || {};
+  openForm.check = null;
+  openForm({
+    title: o ? 'Editar objetivo' : 'Novo objetivo',
+    fields:
+      fld('o-titulo', 'Aonde a área quer chegar', `<input id="o-titulo" name="titulo" class="field" required maxlength="140" value="${esc(v.titulo)}" placeholder="Ex.: Fechamento mensal sem planilha manual">`, true) +
+      fld('o-porque', 'Por que isso importa', `<textarea id="o-porque" name="porque" class="field" rows="3" required maxlength="500">${esc(v.porque)}</textarea>`, true) +
+      fld('o-dono', 'Dono', `<select id="o-dono" name="donoId" class="field">${options([['', 'Sem dono'], ...activePeople().map(p => [p.id, p.nome])], v.donoId)}</select>`) +
+      fld('o-prazo', 'Prazo', `<input id="o-prazo" type="date" name="prazo" class="field" value="${esc(v.prazo)}">`) +
+      fld('o-status', 'Situação', `<select id="o-status" name="status" class="field">${options([['ativo', 'Ativo'], ['pausado', 'Pausado'], ['concluido', 'Concluído']], v.status || 'ativo')}</select>`),
+    onSave: d => save('objetivos', o?.id || newId(), { titulo: d.titulo.trim(), porque: d.porque.trim(), donoId: d.donoId, prazo: d.prazo, status: d.status, criadoEm: o?.criadoEm || new Date().toISOString() }),
+    onDelete: o ? () => removeDoc('objetivos', o.id) : null,
+  });
+}
+function personForm(p) {
+  const v = p || {};
+  openForm.check = null;
+  openForm({
+    title: p ? 'Editar pessoa' : 'Nova pessoa',
+    fields: fld('p-nome', 'Nome', `<input id="p-nome" name="nome" class="field" required maxlength="80" value="${esc(v.nome)}">`) + fld('p-papel', 'Papel', `<input id="p-papel" name="papel" class="field" maxlength="80" placeholder="Ex.: Engenharia de dados" value="${esc(v.papel)}">`),
+    onSave: d => save('pessoas', p?.id || newId(), { nome: d.nome.trim(), papel: d.papel.trim(), ativo: true }),
+    onDelete: p ? () => { const { id, ...rest } = p; return save('pessoas', id, { ...rest, ativo: false }); } : null,
+    deleteLabel: 'Tirar da equipe',
+  });
+}
+function noteForm(key) {
+  const n = data().semanas.find(s => s.id === key) || {};
+  openForm.check = null;
+  openForm({
+    title: 'Semana ' + key,
+    fields: fld('n-foco', 'Foco da semana', `<textarea id="n-foco" name="foco" class="field" rows="2" maxlength="280" placeholder="O que mais importa fazer avançar esta semana?">${esc(n.foco)}</textarea>`, true) + fld('n-riscos', 'Riscos', `<textarea id="n-riscos" name="riscos" class="field" rows="2" maxlength="500">${esc(n.riscos)}</textarea>`, true) + fld('n-dec', 'Decisões', `<textarea id="n-dec" name="decisoes" class="field" rows="2" maxlength="500">${esc(n.decisoes)}</textarea>`, true),
+    onSave: d => save('semanas', key, { foco: d.foco.trim(), riscos: d.riscos.trim(), decisoes: d.decisoes.trim(), atualizadoEm: new Date().toISOString() }),
+  });
+}
+
+/* ---------- render ---------- */
+const route = () => { const r = location.hash.slice(1); return ROUTES[r] ? r : 'panorama'; };
+const VIEWS = { panorama: viewPanorama, equipe: viewEquipe, tarefas: viewTarefas, objetivos: viewObjetivos, evolucao: viewEvolucao, acessos: viewAcessos };
+function render() {
+  document.body.classList.toggle('ro', readOnly);
+  const r = route();
+  $('tabs').innerHTML = Object.entries(ROUTES).map(([k, l]) => `<a href="#${k}" ${k === r ? 'aria-current="page"' : ''}>${esc(l)}</a>`).join('');
+  $('cmp').innerHTML = Object.keys(PERIODS).map(p => `<button type="button" data-period="${p}" aria-pressed="${+p === period}" title="Comparar com ${esc(PERIODS[p])}">${esc(PERIOD_SHORT[p])}</button>`).join('');
+  let b = '';
+  if (demo) b = `<div class="banner"><span><b>Dados de exemplo.</b> Pessoas e números fictícios. Nada aqui é salvo.</span><button class="btn" type="button" data-act="demo-off">Sair do exemplo</button></div>`;
+  else if (phase === 'offline') b = `<div class="banner"><span>Não foi possível carregar os dados da equipe. Verifique a conexão e o login, e recarregue a página.</span></div>`;
+  else if (slow) b = `<div class="banner"><span>Os dados ainda não responderam. O que aparece pode estar desatualizado.</span></div>`;
+  $('banner').innerHTML = b;
+  if (phase === 'loading' && !demo) { $('main').innerHTML = '<p class="muted">Carregando os dados da equipe…</p>'; return; }
+  const ae = document.activeElement, aid = ae && ae.id, pos = ae && ae.selectionStart;
+  $('main').innerHTML = VIEWS[r]();
+  if (aid && aid.startsWith('f-')) { const el = $(aid); if (el) { el.focus(); if (pos != null && el.setSelectionRange) try { el.setSelectionRange(pos, pos); } catch (e) {} } }
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener('click', e => {
+  const per = e.target.closest('[data-period]');
+  if (per) { period = +per.dataset.period; try { localStorage.setItem('rumo.period', period); } catch (x) {} render(); return; }
+  const el = e.target.closest('[data-act]');
+  if (el) act(el.dataset.act, el.dataset.id);
+});
+document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.card')) { e.preventDefault(); act('task', e.target.dataset.id); } });
+function act(a, id) {
+  const D = data();
+  if (a === 'task') { const t = D.tarefas.find(x => x.id === id); if (t) taskForm(t); }
+  else if (a === 'new-task') taskForm(null);
+  else if (a === 'objective') { const o = D.objetivos.find(x => x.id === id); if (o) objectiveForm(o); }
+  else if (a === 'new-objective') objectiveForm(null);
+  else if (a === 'person') { const p = D.pessoas.find(x => x.id === id); if (p) personForm(p); }
+  else if (a === 'new-person') personForm(null);
+  else if (a === 'note') noteForm(id);
+  else if (a === 'access') { const x = D.acessos.find(y => y.id === id); if (x) accessForm(x); }
+  else if (a === 'new-access') accessForm(null);
+  else if (a === 'demo-on') { demoData = buildDemo(); demo = true; render(); }
+  else if (a === 'demo-off') { demo = false; demoData = null; render(); }
+}
+document.addEventListener('input', e => {
+  const ka = e.target.dataset?.afilter;
+  if (ka) { filtA[ka] = e.target.value; const ah = $('access-host'); if (ah) ah.innerHTML = accessHtml(); return; }
+  const k = e.target.dataset?.filter; if (!k) return;
+  filt[k] = e.target.value; const h = $('board-host'); if (h) h.innerHTML = boardHtml();
+});
+document.addEventListener('dragstart', e => { const c = e.target.closest?.('.card'); if (c) { e.dataTransfer.setData('text/plain', c.dataset.id); e.dataTransfer.effectAllowed = 'move'; } });
+document.addEventListener('dragover', e => { const c = e.target.closest?.('.col'); if (c && !readOnly) { e.preventDefault(); document.querySelectorAll('.col.over').forEach(x => x !== c && x.classList.remove('over')); c.classList.add('over'); } });
+document.addEventListener('dragleave', e => { const c = e.target.closest?.('.col'); if (c && !c.contains(e.relatedTarget)) c.classList.remove('over'); });
+document.addEventListener('drop', e => { const c = e.target.closest?.('.col'); if (!c) return; e.preventDefault(); c.classList.remove('over'); const t = data().tarefas.find(x => x.id === e.dataTransfer.getData('text/plain')); if (t) setStatus(t, c.dataset.col); });
+function showTip(el, x, y) { const tip = $('tip'); tip.textContent = el.dataset.tip; tip.hidden = false; const r = tip.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, x + 12)) + 'px'; tip.style.top = Math.max(8, y - r.height - 10) + 'px'; }
+document.addEventListener('mousemove', e => { const el = e.target.closest?.('[data-tip]'); if (el) showTip(el, e.clientX, e.clientY); else $('tip').hidden = true; });
+document.addEventListener('focusin', e => { if (e.target.dataset?.tip) { const r = e.target.getBoundingClientRect(); showTip(e.target, r.left, r.top); } });
+document.addEventListener('focusout', () => { $('tip').hidden = true; });
+addEventListener('hashchange', render);
+
+/* ---------- exemplo (só na memória, nunca gravado) ---------- */
+function buildDemo() {
+  const ago = n => new Date(Date.now() - n * DAY).toISOString();
+  const day = n => ymd(Date.now() + n * DAY);
+  const pessoas = [['ana', 'Ana (exemplo)', 'Engenharia de dados'], ['bruno', 'Bruno (exemplo)', 'Analytics'], ['carla', 'Carla (exemplo)', 'BI'], ['diego', 'Diego (exemplo)', 'Ciência de dados']].map(([id, nome, papel]) => ({ id, nome, papel, ativo: true }));
+  const objetivos = [
+    { id: 'o1', titulo: 'Fechamento mensal sem planilha manual', porque: 'O financeiro gasta 4 dias por mês consolidando números na mão, e erros chegam à diretoria.', donoId: 'ana', prazo: day(45), status: 'ativo', criadoEm: ago(110) },
+    { id: 'o2', titulo: 'Uma só definição de receita na empresa', porque: 'Comercial e Financeiro chegam em reuniões com números diferentes e perdem tempo discutindo a fonte.', donoId: 'carla', prazo: day(20), status: 'ativo', criadoEm: ago(95) },
+    { id: 'o3', titulo: 'Prever ruptura de estoque com 2 semanas de antecedência', porque: 'Ruptura nos itens mais vendidos custa venda e hoje só é vista depois que acontece.', donoId: 'diego', prazo: day(80), status: 'ativo', criadoEm: ago(40) },
+  ];
+  const T = [
+    ['Ingerir extratos bancários no lake', 'Pipeline / ETL', 'ana', 'o1', 'Primeira fonte do fechamento', 'Financeiro', [['andamento', 100], ['concluida', 80]]],
+    ['Conciliar contas a pagar automaticamente', 'Pipeline / ETL', 'ana', 'o1', 'Elimina a etapa mais demorada', 'Financeiro', [['andamento', 70], ['concluida', 40]]],
+    ['Modelar fato de lançamentos contábeis', 'Pipeline / ETL', 'ana', 'o1', 'Base do relatório de fechamento', '', [['andamento', 35], ['concluida', 12]]],
+    ['Testes de qualidade no fechamento', 'Qualidade de dados', 'ana', 'o1', 'Pegar divergências antes da diretoria', 'Financeiro', [['a_fazer', 30], ['andamento', 9]], 12],
+    ['Relatório de fechamento no BI', 'Dashboard / BI', 'carla', 'o1', 'Substitui a planilha final', 'Financeiro', [['a_fazer', 20]], 30],
+    ['Acesso à API do ERP de filiais', 'Infra / plataforma', 'ana', 'o1', 'Falta a fonte das filiais', 'TI', [['andamento', 20], ['bloqueada', 6]], 5, 'Aguardando credencial do fornecedor'],
+    ['Levantar definições de receita por área', 'Análise', 'bruno', 'o2', 'Mapear onde os números divergem', 'Diretoria', [['andamento', 90], ['concluida', 75]]],
+    ['Workshop de definição com Comercial e Financeiro', 'Análise', 'bruno', 'o2', 'Fechar a regra oficial', 'Diretoria', [['andamento', 60], ['concluida', 50]]],
+    ['Publicar métrica oficial de receita', 'Dashboard / BI', 'carla', 'o2', 'Fonte única para todos os painéis', '', [['andamento', 25], ['concluida', 4]]],
+    ['Migrar painel comercial para a métrica oficial', 'Dashboard / BI', 'carla', 'o2', 'Acabar com a divergência na reunião semanal', 'Comercial', [['andamento', 10]], 8],
+    ['Migrar painel de diretoria para a métrica oficial', 'Dashboard / BI', 'carla', 'o2', '', 'Diretoria', [['a_fazer', 10]], 18],
+    ['Levantar histórico de ruptura por SKU', 'Análise', 'diego', 'o3', 'Definir o que conta como ruptura', 'Supply', [['andamento', 38], ['concluida', 24]]],
+    ['Pipeline de estoque diário', 'Pipeline / ETL', 'ana', 'o3', 'Modelo precisa de dado diário', 'Supply', [['andamento', 16]], 15],
+    ['Baseline de previsão de ruptura', 'Modelo / ML', 'diego', 'o3', 'Medir ganho contra a regra atual', 'Supply', [['andamento', 12]], 25],
+    ['Extração de clientes para campanha', 'Análise', 'bruno', '', 'Lista pedida pelo marketing para a campanha de novembro', 'Marketing', [['andamento', 3]], 2],
+    ['Corrigir carga noturna de vendas', 'Sustentação', 'ana', '', 'Painel de vendas amanheceu vazio', 'Comercial', [['andamento', 2], ['concluida', 1]]],
+    ['Ajustar filtro no painel de RH', 'Dashboard / BI', 'carla', '', 'Pedido pontual do RH', 'RH', [['andamento', 22]], -6],
+    ['Análise de churn por região', 'Análise', 'bruno', '', 'Pergunta da diretoria comercial', 'Comercial', [['andamento', 18], ['concluida', 15]]],
+    ['Base para auditoria', 'Análise', 'bruno', '', 'Exigência da auditoria externa', 'Jurídico', [['andamento', 50], ['concluida', 44]]],
+    ['Reprocessar histórico de pedidos', 'Sustentação', 'ana', '', 'Falha na carga de setembro', 'TI', [['andamento', 66], ['concluida', 62]]],
+    ['Relatório ad-hoc de margem', 'Análise', 'bruno', '', 'Pedido da reunião de resultados', 'Financeiro', [['andamento', 33], ['concluida', 29]]],
+    ['Painel de NPS', 'Dashboard / BI', 'carla', '', 'Pedido do atendimento', 'Atendimento', [['andamento', 58], ['concluida', 54]]],
+    ['Atualizar catálogo de dados', 'Qualidade de dados', 'diego', '', 'Novos analistas não acham as tabelas', '', [['a_fazer', 14]], 40],
+  ];
+  const tarefas = T.map((r, i) => ({ id: 't' + i, titulo: r[0], tipo: r[1], pessoaId: r[2], objetivoId: r[3], porque: r[4], solicitante: r[5], historico: r[6].map(([s, n]) => ({ s, em: ago(n) })), status: r[6][r[6].length - 1][0], prazo: r[7] != null ? day(r[7]) : '', bloqueio: r[8] || '', criadoEm: ago(r[6][0][1]) }));
+  const now = Date.now();
+  const semanas = [
+    { id: weekKey(now), foco: 'Destravar a API do ERP de filiais e terminar a migração do painel comercial.', riscos: 'Sem a credencial do fornecedor, o fechamento de novembro continua manual.', decisoes: 'Pedidos avulsos passam pela triagem de terça-feira.' },
+    { id: weekKey(now - 7 * DAY), foco: 'Publicar a métrica oficial de receita.', riscos: 'Muitas demandas avulsas do Comercial.', decisoes: 'Comercial e Financeiro aprovaram a regra de receita.' },
+    { id: weekKey(now - 30 * DAY), foco: 'Concluir a conciliação de contas a pagar.', riscos: 'Ana sozinha em três pipelines.', decisoes: 'Modelo de ruptura começa por 50 SKUs.' },
+    { id: weekKey(now - 90 * DAY), foco: 'Primeira fonte do fechamento no lake.', riscos: '', decisoes: 'Fechamento mensal vira objetivo da área.' },
+  ];
+  const acessos = [
+    { id: 'a1', nome: 'Data warehouse', categoria: 'Banco de dados', url: 'dw-exemplo.interno:5432', paraQue: 'Base analítica de todos os painéis', donoId: 'ana', revisadoEm: day(-20), comoSolicitar: 'Chamado para a TI, com aprovação do responsável', ondeCredencial: 'Login pessoal; conta de serviço no cofre, item DW-prod', pessoas: ['ana', 'bruno', 'diego'] },
+    { id: 'a2', nome: 'Ferramenta de BI', categoria: 'BI / Dashboards', url: 'https://bi.exemplo.com', paraQue: 'Publicação de dashboards', donoId: 'carla', revisadoEm: day(-120), comoSolicitar: 'Pedir para a Carla', ondeCredencial: 'Login pessoal via SSO', pessoas: ['carla', 'bruno'] },
+    { id: 'a3', nome: 'API do ERP', categoria: 'API / Integração', url: 'https://erp.exemplo.com/api', paraQue: 'Fonte do fechamento mensal', donoId: '', revisadoEm: '', comoSolicitar: 'Solicitar ao fornecedor pela TI', ondeCredencial: 'Cofre, item ERP-API', pessoas: ['ana'] },
+  ];
+  return { pessoas, objetivos, tarefas, semanas, acessos };
+}
+
+/* ---------- início ---------- */
+render();
+(async function start() {
+  const timer = setTimeout(() => { if (phase === 'loading') { slow = true; phase = 'ready'; render(); } }, 10000);
+  try { await fetchData(); phase = 'ready'; slow = false; }
+  catch (e) { phase = 'offline'; }
+  clearTimeout(timer);
+  if (!demo) render();
+  /* Busca alterações de outras pessoas, sem atravessar uma gravação em curso. */
+  setInterval(() => {
+    if (document.hidden || demo || phase !== 'ready') return;
+    writing = writing.then(async () => {
+      try { if (await fetchData()) { slow = false; if (!demo) render(); } else if (slow) { slow = false; render(); } }
+      catch (e) { if (!slow) { slow = true; render(); } }
+    });
+  }, 30000);
+})();
+</script>
+</body>
+</html>
