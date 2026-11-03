@@ -1,9 +1,10 @@
 # Rumo da Equipe de Dados
 
 Painel da equipe: objetivos, tarefas, carga de cada pessoa, evolução e catálogo de acessos.
-Roda no Cloudflare Pages e guarda tudo em um único arquivo JSON no R2.
+Roda em um Cloudflare Worker com arquivos estáticos e guarda tudo em um único arquivo JSON no R2.
 
 ```
+src/worker.js            ponto de entrada do Worker: direciona para a API ou para os arquivos de public/
 public/index.html        o painel
 functions/api/data.js    API que lê e grava o JSON e valida o login
 data/rumo.inicial.json   conteúdo inicial com a equipe (fora do Git; só neste computador)
@@ -27,7 +28,7 @@ npm install
 npm run dev
 ```
 
-Abra http://localhost:8788. Os dados ficam só na pasta `.wrangler`. O arquivo `.dev.vars` dispensa o login apenas em localhost.
+Abra http://localhost:8787. Os dados ficam só na pasta `.wrangler`. O arquivo `.dev.vars` dispensa o login apenas em localhost.
 
 Testes: `npm test`
 
@@ -47,9 +48,9 @@ Testes: `npm test`
    ```
    npm run deploy
    ```
-   Na primeira vez, o Wrangler cria o projeto `rumo-dados` e mostra o endereço `*.pages.dev`.
+   O Wrangler publica o Worker `painel---dados` e mostra o endereço `*.workers.dev`. Com o repositório ligado ao Workers Builds, cada push na `main` também publica.
 4. Configure o login em **Zero Trust > Access > Applications > Add an application > Self-hosted**:
-   - Cubra o endereço do painel, incluindo `rumo-dados.pages.dev` e `*.rumo-dados.pages.dev`.
+   - Cubra o endereço do painel: o `*.workers.dev` mostrado no passo 3 e o domínio próprio, se houver.
    - Crie uma política **Allow** com os e-mails da equipe.
    - Copie o **Application Audience (AUD) Tag** e o domínio da equipe (`<equipe>.cloudflareaccess.com`).
 5. Preencha `ACCESS_TEAM_DOMAIN` e `ACCESS_AUD` no `wrangler.toml` e publique de novo com `npm run deploy`.

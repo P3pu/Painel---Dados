@@ -1,6 +1,13 @@
-name = "rumo-dados"
-pages_build_output_dir = "public"
+# O nome precisa ser igual ao do Worker na Cloudflare (Workers e Pages > painel---dados).
+name = "painel---dados"
+main = "src/worker.js"
 compatibility_date = "2025-01-01"
+
+# Arquivos estáticos do painel. As rotas /api/* passam primeiro pelo Worker.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
 
 [[r2_buckets]]
 binding = "DATA"
