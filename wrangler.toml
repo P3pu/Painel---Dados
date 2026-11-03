@@ -13,8 +13,8 @@ run_worker_first = ["/api/*"]
 binding = "DATA"
 bucket_name = "rumo-dados"
 
-# Preencha depois de criar o aplicativo no Cloudflare Access (veja o README).
-# Enquanto estiverem vazias, a API recusa tudo com erro 503.
+# Dados do aplicativo no Cloudflare Access (não são secretos).
+# Se estiverem vazias, a API recusa tudo com erro 503.
 [vars]
-ACCESS_TEAM_DOMAIN = ""
-ACCESS_AUD = ""
+ACCESS_TEAM_DOMAIN = "nortemarketing.cloudflareaccess.com"
+ACCESS_AUD = "b8265a1aebb8b8dfc2238ddc3e1e3c431cda8753b78256ec3b575802df0b7d0c"
