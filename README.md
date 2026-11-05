@@ -1,4 +1,4 @@
-# Rumo da Equipe de Dados
+# IA e Inovações
 
 Painel da equipe: objetivos, tarefas, carga de cada pessoa, evolução e catálogo de acessos.
 Roda em um Cloudflare Worker com arquivos estáticos e guarda tudo em um único arquivo JSON no R2.
