@@ -4,7 +4,7 @@
 // PUT  /api/data             substitui o JSON (exige If-Match ou If-None-Match: *)
 
 const KEY = 'rumo.json';
-const COLS = ['pessoas', 'objetivos', 'tarefas', 'semanas', 'acessos'];
+const COLS = ['pessoas', 'objetivos', 'tarefas', 'semanas', 'acessos', 'projetos'];
 const MAX_BYTES = 5 * 1024 * 1024;
 
 const json = (body, status = 200, headers = {}) =>
@@ -71,7 +71,9 @@ function clean(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
   const out = {};
   for (const c of COLS) {
-    const L = body[c] === undefined ? [] : body[c];
+    // Coleção ausente fica de fora: a gravação mantém a versão guardada (páginas antigas não conhecem coleções novas).
+    if (body[c] === undefined) continue;
+    const L = body[c];
     if (!Array.isArray(L)) return null;
     if (L.some((d) => !d || typeof d !== 'object' || typeof d.id !== 'string' || !d.id)) return null;
     out[c] = L;
@@ -118,13 +120,17 @@ async function handlePut(request, env) {
 
   // Guarda uma cópia por dia do arquivo anterior, já que cada gravação troca o arquivo inteiro.
   const current = await env.DATA.get(KEY);
+  let stored = {};
   if (current) {
     if (ifMatch && unquote(ifMatch) !== current.etag) return json({ erro: 'O arquivo mudou. Recarregue.' }, 412);
+    const currentText = await current.text();
+    try { stored = JSON.parse(currentText) || {}; } catch (e) { stored = {}; }
     const backupKey = `backups/rumo-${new Date().toISOString().slice(0, 10)}.json`;
-    if (!(await env.DATA.head(backupKey))) await env.DATA.put(backupKey, await current.text());
+    if (!(await env.DATA.head(backupKey))) await env.DATA.put(backupKey, currentText);
   } else if (ifMatch) {
     return json({ erro: 'O arquivo mudou. Recarregue.' }, 412);
   }
+  for (const c of COLS) if (!(c in data)) data[c] = Array.isArray(stored[c]) ? stored[c] : [];
 
   const onlyIf = ifMatch ? { etagMatches: unquote(ifMatch) } : { etagDoesNotMatch: '*' };
   const saved = await env.DATA.put(KEY, JSON.stringify(data, null, 2), { onlyIf, httpMetadata: { contentType: 'application/json' } });

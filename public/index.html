@@ -146,6 +146,19 @@ table.access { min-width:980px } table.access td { vertical-align:top } table.ac
 .checks { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:6px }
 .form .checks label { display:inline-flex; flex-direction:row; align-items:center; gap:6px; font-weight:400 }
 
+a.card { color:var(--ink); text-decoration:none }
+.lane-note { font-size:12px; color:var(--ink3); font-weight:400 }
+.facts { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr)); gap:10px 20px; margin:14px 0 0 }
+.facts dt { font-size:12px; color:var(--ink3) } .facts dd { margin:0; overflow-wrap:anywhere }
+.facts a, .doc a { color:var(--accent) }
+.doc { overflow-wrap:anywhere; max-width:80ch }
+.doc h3 { margin:16px 0 4px } .doc h3:first-child { margin-top:0 }
+.doc p { margin:0 0 10px } .doc ul { margin:0 0 10px; padding-left:20px; display:grid; gap:3px }
+.doc code { font:400 12.5px var(--mono); background:var(--track); border-radius:3px; padding:0 4px }
+.doc pre { font:400 12.5px/1.5 var(--mono); background:var(--track); border-radius:6px; padding:10px 12px; overflow-x:auto; margin:0 0 10px }
+ul.feats { margin:0; padding-left:20px; display:grid; gap:6px }
+dialog.wide { width:min(820px,calc(100vw - 32px)) }
+
 dialog { border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); padding:20px; width:min(600px,calc(100vw - 32px)); max-height:calc(100dvh - 32px) }
 dialog::backdrop { background:rgba(10,16,28,.45) }
 .form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; border:none; padding:0; margin:14px 0 0 }
@@ -188,18 +201,19 @@ dialog::backdrop { background:rgba(10,16,28,.45) }
 const DAY = 864e5;
 const ST = {a_fazer:'A fazer', andamento:'Em andamento', bloqueada:'Bloqueada', concluida:'Concluída', cancelada:'Cancelada'};
 const TIPOS = ['Pipeline / ETL','Dashboard / BI','Análise','Modelo / ML','Qualidade de dados','Infra / plataforma','Sustentação'];
-const COLS = ['pessoas','objetivos','tarefas','semanas','acessos'];
+const COLS = ['pessoas','objetivos','tarefas','semanas','acessos','projetos'];
 const CATS = ['Banco de dados','BI / Dashboards','Cloud','Repositório de código','API / Integração','ERP / Sistema interno','Ferramenta','Outro'];
-const ROUTES = {panorama:'Panorama', equipe:'Equipe', tarefas:'Tarefas', objetivos:'Objetivos', evolucao:'Evolução', acessos:'Acessos'};
+const ROUTES = {panorama:'Panorama', equipe:'Equipe', tarefas:'Tarefas', objetivos:'Objetivos', projetos:'Projetos', evolucao:'Evolução', acessos:'Acessos'};
 const PERIODS = {7:'semana passada', 30:'mês passado', 90:'3 meses atrás'};
 const PERIOD_SHORT = {7:'Semana', 30:'Mês', 90:'3 meses'};
 const PERIOD_IN = {7:'na semana passada', 30:'no mês passado', 90:'há 3 meses'};
 
 let etag = null, writing = Promise.resolve(), readOnly = false, demo = false, demoData = null, phase = 'loading', slow = false;
-let live = {pessoas:[], objetivos:[], tarefas:[], semanas:[], acessos:[]};
+let live = {pessoas:[], objetivos:[], tarefas:[], semanas:[], acessos:[], projetos:[]};
 let period = 7;
 const filt = {pessoa:'', objetivo:'', tipo:'', busca:''};
 const filtA = {busca:'', cat:'', pessoa:''};
+const filtP = {busca:'', fase:'', pessoa:''};
 try { const p = +localStorage.getItem('rumo.period'); if (PERIODS[p]) period = p; } catch (e) {}
 
 /* ---------- utilidades ---------- */
@@ -554,9 +568,142 @@ function accessForm(a) {
   });
 }
 
+/* ---------- Projetos ---------- */
+const PST = { ideia: 'Ideia', desenvolvimento: 'Em desenvolvimento', piloto: 'Piloto', producao: 'Em produção', pausado: 'Pausado', descontinuado: 'Descontinuado' };
+const LANES = ['ideia', 'desenvolvimento', 'piloto', 'producao'];
+const LANE_NOTE = { ideia: 'ainda não começou', desenvolvimento: 'sendo construído', piloto: 'em teste com quem usa', producao: 'em uso no dia a dia' };
+const pstPill = s => `<span class="pill ${s === 'producao' ? 'good' : s === 'pausado' ? 'warn' : s === 'descontinuado' ? '' : 'acc'}">${s === 'producao' ? '✓ ' : ''}${esc(PST[s] || 'Sem fase')}</span>`;
+const featList = s => String(s || '').split(/\r?\n/).map(x => x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').trim()).filter(Boolean);
+const techList = s => String(s || '').split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+const projUrl = id => '#projetos/' + encodeURIComponent(id);
+const hasDoc = p => !!String(p.documentacao || '').trim();
+const linkOrText = u => /^https?:\/\//i.test(u || '') ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\//i, ''))}</a>` : u ? `<span class="num small">${esc(u)}</span>` : '<span class="muted">–</span>';
+
+/* Formatação simples da documentação: títulos (#), listas (- ou 1.), **negrito**, `código`, blocos ``` e links. O texto é escapado antes. */
+function inlineMd(s) {
+  return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/https?:\/\/[^\s<]+/g, u => { const m = u.match(/^(.*?)((?:&quot;|&#39;|[).,;:!?])*)$/); return `<a href="${m[1]}" target="_blank" rel="noopener">${m[1]}</a>${m[2]}`; });
+}
+function docHtml(src) {
+  const out = []; let para = [], ul = null, pre = null;
+  const flushP = () => { if (para.length) out.push(`<p>${para.map(inlineMd).join('<br>')}</p>`); para = []; };
+  const flushL = () => { if (ul) out.push(`<ul>${ul.join('')}</ul>`); ul = null; };
+  for (const raw of String(src || '').split(/\r?\n/)) {
+    if (pre) { if (/^\s*```/.test(raw)) { out.push(`<pre>${esc(pre.join('\n'))}</pre>`); pre = null; } else pre.push(raw); continue; }
+    const line = raw.trim(); let m;
+    if (/^```/.test(line)) { flushP(); flushL(); pre = []; }
+    else if (!line) { flushP(); flushL(); }
+    else if ((m = line.match(/^#{1,6}\s+(.*)$/))) { flushP(); flushL(); out.push(`<h3>${inlineMd(m[1])}</h3>`); }
+    else if ((m = line.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/))) { flushP(); (ul = ul || []).push(`<li>${inlineMd(m[1])}</li>`); }
+    else { flushL(); para.push(line); }
+  }
+  if (pre) out.push(`<pre>${esc(pre.join('\n'))}</pre>`);
+  flushP(); flushL();
+  return out.join('');
+}
+
+function viewProjetos() {
+  const sub = routeSub();
+  if (sub) { const p = data().projetos.find(x => x.id === sub); return p ? projectPage(p) : `<section class="panel">${noData('Projeto não encontrado. Ele pode ter sido excluído.', '<a class="btn link" href="#projetos">Voltar para Projetos</a>')}</section>`; }
+  const opt = (v, l, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
+  return `<div class="panel-head" style="margin:0"><div><h2>Projetos da área</h2><p class="small muted">O que cada projeto faz, em que fase está, quem cuida e de quais sistemas depende.</p></div><button class="btn w" data-act="new-project" type="button">Adicionar projeto</button></div>
+  <div class="filters panel" style="padding:12px">
+    <label for="f-p-busca">Buscar<input id="f-p-busca" class="field" data-pfilter="busca" value="${esc(filtP.busca)}" placeholder="Nome, função ou tecnologia"></label>
+    <label for="f-p-fase">Fase<select id="f-p-fase" class="field" data-pfilter="fase">${opt('', 'Todas', filtP.fase)}${Object.entries(PST).map(([k, l]) => opt(k, l, filtP.fase)).join('')}</select></label>
+    <label for="f-p-pessoa">Pessoa<select id="f-p-pessoa" class="field" data-pfilter="pessoa">${opt('', 'Todas', filtP.pessoa)}${activePeople().map(p => opt(p.id, p.nome, filtP.pessoa)).join('')}</select></label>
+  </div><div id="proj-host">${projHtml()}</div>`;
+}
+function projHtml() {
+  const D = data(), { P } = lookups(), A = Object.fromEntries(D.acessos.map(a => [a.id, a])), q = filtP.busca.trim().toLowerCase();
+  if (!D.projetos.length) return `<section class="panel">${noData('Nenhum projeto cadastrado ainda. Comece pelos que já estão em produção: o que fazem, quem usa e onde ficam.')}</section>`;
+  const L = D.projetos.filter(p =>
+    (!filtP.fase || (p.status || '') === filtP.fase) &&
+    (!filtP.pessoa || p.donoId === filtP.pessoa || (p.pessoas || []).includes(filtP.pessoa)) &&
+    (!q || [p.nome, p.resumo, p.funcionalidades, p.tecnologias, p.usuarios].join(' ').toLowerCase().includes(q)))
+    .sort((a, b) => String(a.nome).localeCompare(b.nome, 'pt-BR'));
+  const card = p => {
+    const n = featList(p.funcionalidades).length, sys = (p.sistemas || []).map(id => A[id]?.nome).filter(Boolean);
+    return `<a class="card" href="${projUrl(p.id)}"><span style="font-weight:600">${esc(p.nome)}</span>${p.resumo ? `<span class="why">${esc(p.resumo)}</span>` : ''}
+      <div class="chips"><span class="pill">${esc(P[p.donoId]?.nome || 'Sem responsável')}</span>${n ? `<span class="pill">${n} ${n === 1 ? 'funcionalidade' : 'funcionalidades'}</span>` : ''}${hasDoc(p) ? '' : '<span class="pill warn">Sem documentação</span>'}</div>
+      ${sys.length ? `<span class="small muted">Usa: ${esc(sys.join(', '))}</span>` : ''}</a>`;
+  };
+  const lane = s => { const C = L.filter(p => p.status === s); return `<div class="col"><div class="col-h"><span>${esc(PST[s])}<br><span class="lane-note">${esc(LANE_NOTE[s])}</span></span><span class="num">${C.length}</span></div>${C.map(card).join('')}</div>`; };
+  const rest = L.filter(p => !LANES.includes(p.status));
+  const noDoc = L.filter(p => !hasDoc(p)).length, noOwner = L.filter(p => !P[p.donoId]).length, prod = L.filter(p => p.status === 'producao').length;
+  const deps = D.acessos.map(a => ({ a, ps: L.filter(p => (p.sistemas || []).includes(a.id)) })).filter(x => x.ps.length).sort((x, y) => y.ps.length - x.ps.length || String(x.a.nome).localeCompare(y.a.nome, 'pt-BR'));
+  const noSys = L.filter(p => !(p.sistemas || []).some(id => A[id])).length;
+  return `<section class="panel" style="padding:12px"><div class="load" style="margin:0"><span class="pill acc">${L.length} ${L.length === 1 ? 'projeto' : 'projetos'}</span><span class="pill good">✓ ${prod} em produção</span>${noDoc ? `<span class="pill warn">${noDoc} sem documentação</span>` : ''}${noOwner ? `<span class="pill warn">${noOwner} sem responsável</span>` : ''}</div></section>
+  ${L.length ? `<div class="board-wrap"><div class="board">${LANES.map(lane).join('')}</div></div>` : `<section class="panel">${noData('Nenhum projeto com esses filtros.')}</section>`}
+  ${rest.length ? `<section class="panel"><div class="panel-head"><h2>Fora do mapa</h2><span class="small muted">Pausados ou descontinuados</span></div>${rest.map(p => `<a class="row-task" style="color:inherit;text-decoration:none" href="${projUrl(p.id)}"><span class="rt">${esc(p.nome)} ${pstPill(p.status)}</span>${p.resumo ? `<span class="why">${esc(p.resumo)}</span>` : ''}</a>`).join('')}</section>` : ''}
+  ${L.length ? `<section class="panel"><div class="panel-head"><h2>De quais sistemas os projetos dependem</h2><span class="small muted">Se um sistema parar, estes projetos sentem</span></div>
+    ${deps.length ? `<div class="table-wrap"><table><thead><tr><th>Sistema</th><th class="n">Projetos</th><th>Quais</th></tr></thead><tbody>${deps.map(x => `<tr><td><button class="btn link" style="text-align:left" type="button" data-act="access" data-id="${esc(x.a.id)}">${esc(x.a.nome)}</button><br><span class="small muted">${esc(x.a.categoria || '')}</span></td><td class="n">${x.ps.length}</td><td><div class="chips-a">${x.ps.map(p => `<a class="pill" style="text-decoration:none" href="${projUrl(p.id)}">${esc(p.nome)}</a>`).join('')}</div></td></tr>`).join('')}</tbody></table></div>` : noData('Nenhum projeto ligado aos sistemas da aba Acessos ainda.')}
+    ${noSys && deps.length ? `<p class="small muted" style="margin-top:8px">${noSys} ${noSys === 1 ? 'projeto ainda não tem' : 'projetos ainda não têm'} sistema ligado.</p>` : ''}</section>` : ''}`;
+}
+function projectPage(p) {
+  const D = data(), { P, O } = lookups(), A = Object.fromEntries(D.acessos.map(a => [a.id, a]));
+  const team = [...new Set([p.donoId, ...(p.pessoas || [])])].filter(id => P[id]).map(id => P[id].nome);
+  const feats = featList(p.funcionalidades), techs = techList(p.tecnologias), sys = (p.sistemas || []).map(id => A[id]).filter(Boolean);
+  const fact = (l, v) => `<div><dt>${esc(l)}</dt><dd>${v}</dd></div>`;
+  const dash = '<span class="muted">–</span>';
+  return `<p><a class="btn link" href="#projetos">← Todos os projetos</a></p>
+  <section class="panel">
+    <div class="person-head"><div style="min-width:0"><div class="eyebrow">Projeto</div><h2 style="font-size:22px">${esc(p.nome)}</h2></div><button class="btn w" data-act="project" data-id="${esc(p.id)}" type="button">Editar</button></div>
+    <div class="load">${pstPill(p.status)}${hasDoc(p) ? '' : '<span class="pill warn">Sem documentação</span>'}</div>
+    ${p.resumo ? `<p style="font-size:15px;max-width:75ch">${esc(p.resumo)}</p>` : ''}
+    <dl class="facts">
+      ${fact('Responsável', P[p.donoId] ? esc(P[p.donoId].nome) : '<span class="pill warn">Sem responsável</span>')}
+      ${fact('Quem trabalha nele', team.length ? esc(team.join(', ')) : dash)}
+      ${fact('Quem usa', p.usuarios ? esc(p.usuarios) : dash)}
+      ${fact('Objetivo que apoia', O[p.objetivoId] ? `<button class="btn link" style="text-align:left" type="button" data-act="objective" data-id="${esc(p.objetivoId)}">${esc(O[p.objetivoId].titulo)}</button>` : dash)}
+      ${fact('Tecnologias', techs.length ? `<div class="chips-a">${techs.map(t => `<span class="pill">${esc(t)}</span>`).join('')}</div>` : dash)}
+      ${fact('Onde roda', linkOrText(p.endereco))}
+      ${fact('Repositório', linkOrText(p.repositorio))}
+      ${fact('Atualizado em', p.atualizadoEm ? `<span class="num">${esc(fmtD(p.atualizadoEm))}</span>` : dash)}
+    </dl>
+  </section>
+  <div class="two">
+    <section class="panel"><div class="panel-head"><h2>Documentação</h2></div>${hasDoc(p) ? `<div class="doc">${docHtml(p.documentacao)}</div>` : noData('Ainda sem documentação. Conte como funciona, como rodar e o que fazer quando der errado.', `<button class="btn link w" data-act="project" data-id="${esc(p.id)}" type="button">Escrever agora</button>`)}</section>
+    <div class="stack">
+      <section class="panel"><div class="panel-head"><h2>Funcionalidades</h2><span class="num small muted">${feats.length}</span></div>${feats.length ? `<ul class="feats">${feats.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : noData('Nenhuma funcionalidade listada.')}</section>
+      <section class="panel"><div class="panel-head"><h2>Sistemas que usa</h2><span class="num small muted">${sys.length}</span></div>${sys.length ? sys.map(a => `<button class="row-task" type="button" data-act="access" data-id="${esc(a.id)}"><span class="rt">${esc(a.nome)}</span><span class="small muted">${esc(a.categoria || '')}${P[a.donoId] ? ' · responsável: ' + esc(P[a.donoId].nome) : ''}</span></button>`).join('') : noData('Nenhum sistema ligado. Os sistemas vêm da aba Acessos.')}</section>
+    </div>
+  </div>`;
+}
+function projectForm(p) {
+  const v = p || { status: 'desenvolvimento', pessoas: [], sistemas: [] }, curP = v.pessoas || [], curS = v.sistemas || [];
+  openForm.check = d => Object.values(d).some(x => typeof x === 'string' && (SECRET_RE.test(x) || URL_CRED_RE.test(x))) ? 'Parece haver uma senha, token ou chave no texto. Tire o valor e informe só onde a credencial está guardada.' : '';
+  const D = data(), people = D.pessoas.filter(x => x.ativo !== false || curP.includes(x.id));
+  const systems = [...D.acessos].sort((a, b) => String(a.nome).localeCompare(b.nome, 'pt-BR'));
+  const box = (attr, id, label, on) => `<label for="pf-${attr}-${esc(id)}"><input type="checkbox" id="pf-${attr}-${esc(id)}" data-${attr}="${esc(id)}"${on ? ' checked' : ''}> ${esc(label)}</label>`;
+  openForm({
+    title: p ? 'Editar projeto' : 'Novo projeto', wide: true,
+    fields:
+      fld('pf-nome', 'Nome do projeto', `<input id="pf-nome" name="nome" class="field" required maxlength="100" value="${esc(v.nome)}">`) +
+      fld('pf-status', 'Fase', `<select id="pf-status" name="status" class="field">${options(Object.entries(PST), v.status)}</select>`) +
+      fld('pf-resumo', 'O que faz', `<textarea id="pf-resumo" name="resumo" class="field" rows="2" required maxlength="400" placeholder="Em uma ou duas frases: que problema resolve e para quem">${esc(v.resumo)}</textarea>`, true) +
+      fld('pf-dono', 'Responsável', `<select id="pf-dono" name="donoId" class="field">${options([['', 'Sem responsável'], ...D.pessoas.filter(x => x.ativo !== false || x.id === v.donoId).map(x => [x.id, x.nome])], v.donoId)}</select>`) +
+      fld('pf-obj', 'Objetivo que apoia', `<select id="pf-obj" name="objetivoId" class="field">${options([['', 'Nenhum'], ...D.objetivos.filter(o => (o.status || 'ativo') === 'ativo' || o.id === v.objetivoId).map(o => [o.id, o.titulo])], v.objetivoId)}</select>`) +
+      fld('pf-usu', 'Quem usa', `<input id="pf-usu" name="usuarios" class="field" maxlength="160" value="${esc(v.usuarios)}" placeholder="Ex.: Comercial e diretoria">`) +
+      fld('pf-tec', 'Tecnologias (separadas por vírgula)', `<input id="pf-tec" name="tecnologias" class="field" maxlength="200" value="${esc(v.tecnologias)}" placeholder="Ex.: Python, Postgres, Cloudflare">`) +
+      fld('pf-end', 'Onde roda (link ou servidor)', `<input id="pf-end" name="endereco" class="field" maxlength="300" value="${esc(v.endereco)}">`) +
+      fld('pf-repo', 'Repositório', `<input id="pf-repo" name="repositorio" class="field" maxlength="300" value="${esc(v.repositorio)}">`) +
+      fld('pf-func', 'Funcionalidades (uma por linha)', `<textarea id="pf-func" name="funcionalidades" class="field" rows="5" maxlength="4000">${esc(v.funcionalidades)}</textarea>`, true) +
+      fld('pf-doc', 'Documentação', `<textarea id="pf-doc" name="documentacao" class="field" rows="12" maxlength="20000" style="font-family:var(--mono);font-size:12.5px" placeholder="## Como funciona&#10;&#10;## Como rodar&#10;&#10;## Quando der errado">${esc(v.documentacao)}</textarea><span class="small muted" style="font-weight:400">Aceita ## título, - lista, **negrito**, \`código\` e blocos entre \`\`\`. Links viram clicáveis.</span>`, true) +
+      `<div class="full"><span class="small" style="font-weight:500;color:var(--ink2)">Quem trabalha nele</span><div class="checks">${people.map(x => box('person', x.id, x.nome, curP.includes(x.id))).join('') || '<span class="small muted">Cadastre a equipe primeiro.</span>'}</div></div>` +
+      `<div class="full"><span class="small" style="font-weight:500;color:var(--ink2)">Sistemas que usa</span><div class="checks">${systems.map(a => box('system', a.id, a.nome, curS.includes(a.id))).join('') || '<span class="small muted">Cadastre os sistemas na aba Acessos.</span>'}</div></div>`,
+    onSave: d => {
+      const pick = k => [...$('dlg').querySelectorAll(`[data-${k}]:checked`)].map(x => x.dataset[k]);
+      const nowIso = new Date().toISOString();
+      return save('projetos', p?.id || newId(), { nome: d.nome.trim(), status: d.status, resumo: d.resumo.trim(), donoId: d.donoId, objetivoId: d.objetivoId, usuarios: d.usuarios.trim(), tecnologias: d.tecnologias.trim(), endereco: d.endereco.trim(), repositorio: d.repositorio.trim(), funcionalidades: d.funcionalidades.trim(), documentacao: d.documentacao.trim(), pessoas: pick('person'), sistemas: pick('system'), criadoEm: p?.criadoEm || nowIso, atualizadoEm: nowIso });
+    },
+    onDelete: p ? async () => { const ok = await removeDoc('projetos', p.id); if (ok && routeSub() === p.id) location.hash = 'projetos'; return ok; } : null,
+  });
+}
+
 /* ---------- diálogos ---------- */
-function openForm({ title, fields, onSave, onDelete, deleteLabel }) {
+function openForm({ title, fields, onSave, onDelete, deleteLabel, wide }) {
   const dlg = $('dlg');
+  dlg.classList.toggle('wide', !!wide);
   dlg.innerHTML = `<form id="dlg-form"><h2>${esc(title)}</h2><fieldset class="form" ${readOnly ? 'disabled' : ''}>${fields}<p class="err" id="dlg-err" hidden></p></fieldset>
     <div class="dlg-foot"><span>${onDelete && !readOnly ? `<button class="btn danger" id="dlg-del" type="button">${esc(deleteLabel || 'Excluir')}</button>` : ''}</span>
     <div><button class="btn" id="dlg-cancel" type="button">${readOnly ? 'Fechar' : 'Cancelar'}</button>${readOnly ? '' : '<button class="btn pri" type="submit">Salvar</button>'}</div></div></form>`;
@@ -636,8 +783,9 @@ function noteForm(key) {
 }
 
 /* ---------- render ---------- */
-const route = () => { const r = location.hash.slice(1); return ROUTES[r] ? r : 'panorama'; };
-const VIEWS = { panorama: viewPanorama, equipe: viewEquipe, tarefas: viewTarefas, objetivos: viewObjetivos, evolucao: viewEvolucao, acessos: viewAcessos };
+const route = () => { const r = location.hash.slice(1).split('/')[0]; return ROUTES[r] ? r : 'panorama'; };
+const routeSub = () => { try { return decodeURIComponent(location.hash.slice(1).split('/').slice(1).join('/')); } catch (e) { return ''; } };
+const VIEWS = { panorama: viewPanorama, equipe: viewEquipe, tarefas: viewTarefas, objetivos: viewObjetivos, evolucao: viewEvolucao, acessos: viewAcessos, projetos: viewProjetos };
 function render() {
   document.body.classList.toggle('ro', readOnly);
   const r = route();
@@ -673,12 +821,16 @@ function act(a, id) {
   else if (a === 'note') noteForm(id);
   else if (a === 'access') { const x = D.acessos.find(y => y.id === id); if (x) accessForm(x); }
   else if (a === 'new-access') accessForm(null);
+  else if (a === 'project') { const x = D.projetos.find(y => y.id === id); if (x) projectForm(x); }
+  else if (a === 'new-project') projectForm(null);
   else if (a === 'demo-on') { demoData = buildDemo(); demo = true; render(); }
   else if (a === 'demo-off') { demo = false; demoData = null; render(); }
 }
 document.addEventListener('input', e => {
   const ka = e.target.dataset?.afilter;
   if (ka) { filtA[ka] = e.target.value; const ah = $('access-host'); if (ah) ah.innerHTML = accessHtml(); return; }
+  const kp = e.target.dataset?.pfilter;
+  if (kp) { filtP[kp] = e.target.value; const ph = $('proj-host'); if (ph) ph.innerHTML = projHtml(); return; }
   const k = e.target.dataset?.filter; if (!k) return;
   filt[k] = e.target.value; const h = $('board-host'); if (h) h.innerHTML = boardHtml();
 });
@@ -690,7 +842,7 @@ function showTip(el, x, y) { const tip = $('tip'); tip.textContent = el.dataset.
 document.addEventListener('mousemove', e => { const el = e.target.closest?.('[data-tip]'); if (el) showTip(el, e.clientX, e.clientY); else $('tip').hidden = true; });
 document.addEventListener('focusin', e => { if (e.target.dataset?.tip) { const r = e.target.getBoundingClientRect(); showTip(e.target, r.left, r.top); } });
 document.addEventListener('focusout', () => { $('tip').hidden = true; });
-addEventListener('hashchange', render);
+addEventListener('hashchange', () => { render(); if (route() === 'projetos') scrollTo(0, 0); });
 
 /* ---------- exemplo (só na memória, nunca gravado) ---------- */
 function buildDemo() {
@@ -740,7 +892,16 @@ function buildDemo() {
     { id: 'a2', nome: 'Ferramenta de BI', categoria: 'BI / Dashboards', url: 'https://bi.exemplo.com', paraQue: 'Publicação de dashboards', donoId: 'carla', revisadoEm: day(-120), comoSolicitar: 'Pedir para a Carla', ondeCredencial: 'Login pessoal via SSO', pessoas: ['carla', 'bruno'] },
     { id: 'a3', nome: 'API do ERP', categoria: 'API / Integração', url: 'https://erp.exemplo.com/api', paraQue: 'Fonte do fechamento mensal', donoId: '', revisadoEm: '', comoSolicitar: 'Solicitar ao fornecedor pela TI', ondeCredencial: 'Cofre, item ERP-API', pessoas: ['ana'] },
   ];
-  return { pessoas, objetivos, tarefas, semanas, acessos };
+  const projetos = [
+    { id: 'pr1', nome: 'Fechamento automático (exemplo)', status: 'piloto', resumo: 'Consolida extratos, contas a pagar e lançamentos contábeis e entrega o relatório de fechamento sem planilha.', donoId: 'ana', pessoas: ['ana', 'carla'], objetivoId: 'o1', usuarios: 'Financeiro e diretoria', tecnologias: 'Python, SQL, ferramenta de BI', endereco: 'https://bi.exemplo.com/fechamento', repositorio: 'https://git.exemplo.com/dados/fechamento', sistemas: ['a1', 'a2', 'a3'],
+      funcionalidades: 'Ingestão diária dos extratos bancários\nConciliação automática de contas a pagar\nTestes de qualidade antes de publicar\nRelatório de fechamento no BI',
+      documentacao: '## Como funciona\nTodo dia às 6h o pipeline lê os extratos e grava no **data warehouse**. A conciliação roda logo depois.\n\n## Como rodar\n```\npython -m fechamento --data 2026-10-31\n```\n\n## Quando der errado\n- Ver o log da última carga\n- Avisar o Financeiro antes das 9h',
+      criadoEm: ago(100), atualizadoEm: ago(3) },
+    { id: 'pr2', nome: 'Métrica oficial de receita (exemplo)', status: 'producao', resumo: 'Define a receita uma única vez e serve todos os painéis com o mesmo número.', donoId: 'carla', pessoas: ['carla', 'bruno'], objetivoId: 'o2', usuarios: 'Comercial, Financeiro e diretoria', tecnologias: 'SQL, ferramenta de BI', endereco: 'https://bi.exemplo.com/receita', repositorio: '', sistemas: ['a1', 'a2'], funcionalidades: 'Regra única de receita\nPainel comercial migrado', documentacao: 'A regra foi aprovada por Comercial e Financeiro. Detalhes em https://wiki.exemplo.com/receita.', criadoEm: ago(90), atualizadoEm: ago(20) },
+    { id: 'pr3', nome: 'Previsão de ruptura (exemplo)', status: 'desenvolvimento', resumo: 'Avisa com duas semanas de antecedência quais itens vão faltar.', donoId: 'diego', pessoas: ['diego', 'ana'], objetivoId: 'o3', usuarios: 'Supply', tecnologias: 'Python, scikit-learn', endereco: '', repositorio: '', sistemas: ['a1'], funcionalidades: '', documentacao: '', criadoEm: ago(40), atualizadoEm: ago(12) },
+    { id: 'pr4', nome: 'Painel de NPS (exemplo)', status: 'ideia', resumo: 'Reunir as notas de NPS por canal em um só painel.', donoId: '', pessoas: [], objetivoId: '', usuarios: 'Atendimento', tecnologias: '', endereco: '', repositorio: '', sistemas: [], funcionalidades: '', documentacao: '', criadoEm: ago(8), atualizadoEm: ago(8) },
+  ];
+  return { pessoas, objetivos, tarefas, semanas, acessos, projetos };
 }
 
 /* ---------- início ---------- */

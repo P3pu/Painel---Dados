@@ -1,6 +1,6 @@
 # IA e Inovações
 
-Painel da equipe: objetivos, tarefas, carga de cada pessoa, evolução e catálogo de acessos.
+Painel da equipe: objetivos, tarefas, carga de cada pessoa, projetos com documentação, evolução e catálogo de acessos.
 Roda em um Cloudflare Worker com arquivos estáticos e guarda tudo em um único arquivo JSON no R2.
 
 ```
@@ -8,8 +8,16 @@ src/worker.js            ponto de entrada do Worker: direciona para a API ou par
 public/index.html        o painel
 functions/api/data.js    API que lê e grava o JSON e valida o login
 data/rumo.inicial.json   conteúdo inicial com a equipe (fora do Git; só neste computador)
-tests/                   testes da validação de login
+tests/                   testes da validação de login e da gravação do JSON
 ```
+
+## Aba Projetos
+
+Cada projeto tem fase (ideia, em desenvolvimento, piloto, em produção, pausado ou descontinuado), o que faz, responsável, quem trabalha nele, quem usa, objetivo que apoia, tecnologias, onde roda, repositório, funcionalidades (uma por linha) e documentação.
+
+- A lista mostra os projetos em colunas por fase e uma tabela de quais sistemas da aba Acessos cada projeto usa.
+- Cada projeto tem uma página própria em `#projetos/<id>`, com a documentação formatada.
+- A documentação aceita `## título`, listas com `-` ou `1.`, `**negrito**`, `` `código` ``, blocos entre ```` ``` ```` e links `https://`. O texto é escapado antes, então HTML digitado aparece como texto.
 
 ## Como os dados funcionam
 
@@ -17,6 +25,7 @@ tests/                   testes da validação de login
 - Cada gravação troca o arquivo inteiro. Se duas pessoas salvarem ao mesmo tempo, a API detecta e o painel reaplica a alteração sobre a versão mais nova.
 - O painel busca alterações de outras pessoas a cada 30 segundos.
 - Antes da primeira gravação de cada dia (UTC), a versão anterior é copiada para `backups/rumo-AAAA-MM-DD.json`. Essas cópias não são apagadas sozinhas.
+- O JSON tem as listas `pessoas`, `objetivos`, `tarefas`, `semanas`, `acessos` e `projetos`. Se uma gravação chegar sem alguma delas (por exemplo, de uma aba aberta antes de a lista existir), a API mantém a versão guardada em vez de apagar. Para esvaziar uma lista, é preciso enviá-la vazia.
 - O botão **Baixar JSON** no topo do painel baixa o arquivo atual.
 
 **Não guarde senhas, tokens ou chaves neste arquivo.** Todos com acesso ao painel conseguem ler o conteúdo.
